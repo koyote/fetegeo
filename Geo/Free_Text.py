@@ -18,7 +18,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
 import re
 import Results, UK, US
 
@@ -59,7 +58,7 @@ class Free_Text:
         # and work left, shorter values of _longest_match are "better".
 
         self._longest_match = len(self.split)
-        self._matches = [[] for x in range(len(self.split))]
+        self._matches = [[] for _ in range(len(self.split))]
 
         # _matched_places is a set storing (place_id, i) pairs recording that a place was found at
         # position 'i' in the split. This weeds out duplicates *unless* we're doing loose matching
@@ -299,8 +298,8 @@ class Free_Text:
                     yield new_parent_places, postcode, new_i
                 elif new_i is not None:
                     record_match = True
-                    for sub_places, sub_postcode, k in self._iter_places(new_i, sub_country_id, \
-                      new_parent_places, postcode):
+                    for sub_places, sub_postcode, k in self._iter_places(new_i, sub_country_id,
+                        new_parent_places, postcode):
                         assert k < new_i
                         record_match = False
                         yield sub_places, sub_postcode, k
@@ -324,8 +323,8 @@ class Free_Text:
                     pp = self.queryier.pp_place_id(self, place_id)
 
                     self._longest_match = new_i + 1
-                    self._matches[new_i + 1].append(Results.RPlace(place_id, local_name, lat, long, \
-                      sub_country_id, parent_id, population, pp))
+                    self._matches[new_i + 1].append(Results.RPlace(place_id, local_name, lat, long,
+                        sub_country_id, parent_id, population, pp))
 
             if postcode is None:
                 for sub_postcode, k in self._iter_postcode(i, country_id):
@@ -345,8 +344,8 @@ class Free_Text:
                         # a place can come before a postcode. We therefore need to check the places to
                         # the left of the postcode.
 
-                        for sub_places, sub_sub_postcode, k in self._iter_places(k, country_id, \
-                          parent_places, sub_postcode):
+                        for sub_places, sub_sub_postcode, k in self._iter_places(k, country_id,
+                            parent_places, sub_postcode):
                             assert sub_sub_postcode is sub_postcode
                             yield sub_places, sub_sub_postcode, k
 

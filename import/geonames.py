@@ -303,7 +303,7 @@ MODIFICATION_DATE = 18
 name_sql = """INSERT INTO place_name (place_id, lang_id, name, name_hash, is_official)
   VALUES (%(place_id)s, %(lang_id)s, %(name)s, %(name_hash)s, %(is_official)s)"""
 
-c.execute("SELECT nextval('place_id_seq')");
+c.execute("SELECT nextval('place_id_seq')")
 place_id = c.fetchone()[0]
 i = 0
 for iso2 in countries_map.keys():
@@ -353,8 +353,8 @@ for iso2 in countries_map.keys():
             if admin1_map.has_key(admin1_code):
                 parent_id = str(admin1_map[admin1_code])
 
-        place_tsv = u"\t".join([str(place_id), geonames_id, str(country_id), parent_id, \
-          r[LATITUDE], r[LONGITUDE], str(TYPE_PLACE), r[POPULATION]])
+        place_tsv = u"\t".join([str(place_id), geonames_id, str(country_id), parent_id,
+                                r[LATITUDE], r[LONGITUDE], str(TYPE_PLACE), r[POPULATION]])
         os.write(tmp_place_hndl, place_tsv.encode("utf-8") + "\n")
 
         lang_id = "\\N"
@@ -364,8 +364,8 @@ for iso2 in countries_map.keys():
 
         if asciiname != name:
             asciiname_hash = _hash_list(_split(asciiname))
-            place_name_tsv = "\t".join([str(place_id), lang_id, asciiname, \
-              str(asciiname_hash), "FALSE"])
+            place_name_tsv = "\t".join([str(place_id), lang_id, asciiname,
+                                        str(asciiname_hash), "FALSE"])
             os.write(tmp_place_name_hndl, place_name_tsv.encode("utf-8") + "\n")
 
         place_id += 1
@@ -381,14 +381,14 @@ for iso2 in countries_map.keys():
       FROM %(path)s""", dict(path=tmp_place_path))
     sys.stdout.write("importing place names...")
     sys.stdout.flush()
-    c.execute("COPY place_name (place_id, lang_id, name, name_hash, is_official) FROM %(path)s", \
-      dict(path=tmp_place_name_path))
+    c.execute("COPY place_name (place_id, lang_id, name, name_hash, is_official) FROM %(path)s",
+        dict(path=tmp_place_name_path))
     os.remove(tmp_place_path)
     os.remove(tmp_place_name_path)
     db.commit()
     print()
 
-c.execute("SELECT setval ('place_id_seq', %(place_id)s)", dict(place_id=place_id));
+c.execute("SELECT setval ('place_id_seq', %(place_id)s)", dict(place_id=place_id))
 db.commit()
 
 

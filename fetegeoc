@@ -35,9 +35,9 @@ _DEFAULT_LANG = "en" # English
 _Q_GEO = 0
 _Q_CTRY = 1
 
-_TAG_LONG_NAMES = {"dangling" : "Dangling text", "place" : "Place", "id" : "ID", "name" : "Name", \
-  "lat" : "Latitude", "long" : "Longitude", "country_id" : "Country ID", "parent_id" : "Parent ID", \
-  "population" : "Population", "pp" : "PP"}
+_TAG_LONG_NAMES = {"dangling" : "Dangling text", "place" : "Place", "id" : "ID", "name" : "Name",
+                   "lat" : "Latitude", "long" : "Longitude", "country_id" : "Country ID", "parent_id" : "Parent ID",
+                   "population" : "Population", "pp" : "PP"}
 
 
 _SHORT_USAGE_MSG = """Usage:
@@ -78,8 +78,6 @@ class Fetegeoc:
             self._q_geo()
         elif self._q_type == _Q_CTRY:
             self._q_ctry()
-        else:
-            None
 
 
 
@@ -177,20 +175,13 @@ class Fetegeoc:
 
     def _q_geo(self):
 
-        if self._find_all:
-            fa_txt = "true"
-        else:
-            fa_txt = "false"
-
-        if self._allow_dangling:
-            ad_txt = "true"
-        else:
-            ad_txt = "false"
+        fa_txt = str(self._find_all).lower()
+        ad_txt = str(self._allow_dangling).lower()
 
         langs = "\n".join(["<lang>%s</lang>" % x for x in self._langs])
-        if self._country is None:
-            country = ""
-        else:
+        country = ""
+
+        if self._country is not None:
             country = "<country>%s</country>\n" % self._country
 
         self._sock.sendall("""
@@ -232,7 +223,6 @@ class Fetegeoc:
         if i == 0:
             sys.stderr.write("No match found.\n")
             sys.exit(1)
-
 
 
     def _q_ctry(self):
