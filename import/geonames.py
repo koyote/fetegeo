@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2
 
 # Copyright (C) 2008 Laurence Tratt http://tratt.net/laurie/
 #
@@ -20,9 +20,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-
-import codecs, os, re, sys, tempfile, urllib
+from __future__ import print_function
+import codecs, os, re, sys, tempfile, urllib, stat
 import imputils
+
 
 try:
     import pgdb as dbmod
@@ -88,7 +89,7 @@ def _hash_list(s):
 
 
 
-print "===> Connecting to database"
+print("===> Connecting to database")
 
 db = dbmod.connect(user="root", database="fetegeo")
 if hasattr(db, "set_client_encoding"):
@@ -96,16 +97,16 @@ if hasattr(db, "set_client_encoding"):
 
 
 
-print "===> Creating tables"
+print("===> Creating tables")
 
-f = file("tables", "rt")
+f = open("tables", "rt")
 c = db.cursor()
 c.execute(f.read())
 f.close()
 
 
 
-print "===> Importing language codes"
+print("===> Importing language codes")
 
 langs_map = {}
 f = urllib.urlopen("http://download.geonames.org/export/dump/iso-languagecodes.txt")
@@ -128,7 +129,7 @@ f.close()
 
 
 
-print "===> Importing country codes"
+print("===> Importing country codes")
 
 f = codecs.open("country_codes", "rt", "utf-8")
 countries_map = {}
@@ -141,7 +142,7 @@ for l in f:
 
 
 
-print "===> Importing country names"
+print("===> Importing country names")
 
 langs = langs_map.keys()
 langs.sort()
@@ -150,7 +151,7 @@ for iso639_1 in langs:
         # For the time being, we only use ISO 639_1 language codes.
         continue
 
-    print iso639_1,
+    print(iso639_1, end=" ")
     sys.stdout.flush()
     for r in urllib.urlopen("http://www.geonames.org/countryInfoCSV?lang=%s" % iso639_1):
         sp = r.split("\t")
@@ -179,12 +180,12 @@ for alts in ALT_COUNTRY_NAMES:
           VALUES  (%(country_id)s, %(lang_id)s, FALSE, %(name)s, %(name_lwdh)s)""",
           dict(country_id=country_id, lang_id=lang_id, name=alt, name_lwdh=lwdh))
 
-print
+print()
 f.close()
 db.commit()
 
 
-print "===> Importing admin1 areas"
+print("===> Importing admin1 areas")
 
 # In theory, Geoname's Admin1 areas are roughly equivalent to a state within a country.
 #
@@ -225,7 +226,7 @@ f.close()
 db.commit()
 
 
-print "===> Importing admin2 areas"
+print("===> Importing admin2 areas")
 
 # In theory, Geoname's Admin2 areas are roughly equivalent to a county within a state.
 
@@ -246,12 +247,12 @@ for l in codecs.EncodedFile(f, "utf-8"):
 
     # Admin2 IDs are of the form "GB.ENG.M3" and so on. Any that aren't are considered invalid.
     if len(r[0].split(".")[0]) != 2:
-        print "Admin2 area with incorrect Admin1 code:", r
+        print("Admin2 area with incorrect Admin1 code:", r)
         continue
     country_id = countries_map[r[0][:2]]
     admin1_code = r[0][:r[0].index(".", r[0].index(".") + 1)]
     if not admin1_map.has_key(admin1_code):
-        print "Admin2 area with incorrect Admin1 code:", r
+        print("Admin2 area with incorrect Admin1 code:", r)
         continue
     admin1_id = admin1_map[admin1_code]
 
@@ -277,7 +278,7 @@ f.close()
 db.commit()
 
 
-print "===> Importing country codes"
+print("===> Importing country codes")
 
 GEONAMEID = 0
 NAME = 1
@@ -319,6 +320,11 @@ for iso2 in countries_map.keys():
     name_buf = []
     tmp_place_hndl, tmp_place_path = tempfile.mkstemp()
     tmp_place_name_hndl, tmp_place_name_path = tempfile.mkstemp()
+
+    # Set file permissions for when the user running this script is not the same as the user applying the COPY
+    os.chmod(tmp_place_path, stat.S_IROTH)
+    os.chmod(tmp_place_name_path, stat.S_IROTH)
+
     for l in f:
         r = [x.strip() for x in l.split("\t")]
         
@@ -380,18 +386,18 @@ for iso2 in countries_map.keys():
     os.remove(tmp_place_path)
     os.remove(tmp_place_name_path)
     db.commit()
-    print
+    print()
 
 c.execute("SELECT setval ('place_id_seq', %(place_id)s)", dict(place_id=place_id));
 db.commit()
 
 
-print "===> Downloading alternative names"
+print("===> Downloading alternative names")
 
 alt_path = imputils.zipex("http://download.geonames.org/export/dump/alternateNames.zip",
   "alternateNames.txt")
 
-print "===> Importing alternative names"
+print("===> Importing alternative names")
 
 ALTERNATENAMEID = 0
 GEONAMEID = 1
@@ -448,10 +454,10 @@ for l in f:
 c.executemany(place_name_query, place_name_buf)
 place_name_buf = []
 
-print
+print()
 
 
 
-print "===> Final commit"
+print("===> Final commit")
 
 db.commit()

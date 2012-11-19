@@ -45,12 +45,12 @@ for path in paths:
     if path.endswith(PY_EXT):
         continue
 
-    print path
+    print(path)
     
     f = open(path, "r")
     f_lines = [x.strip() for x in f if not x.startswith(COMMENT_PREFIX)]
     if not f_lines[0].startswith(SHELL_PREFIX):
-        XXX
+        None
 
     rest = f.read()
 
@@ -67,6 +67,6 @@ for path in paths:
             if l.startswith("id:"):
                 continue
             
-            print "Not found:\n  %s\nin:  " % l
-            print "\n  ".join(stdout_lines)
+            print("Not found:\n  %s\nin:  " % l)
+            print("\n  ".join(stdout_lines))
             sys.exit(1)

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2
 
 # Copyright (C) 2008 Laurence Tratt http://tratt.net/laurie/
 #
@@ -48,7 +48,7 @@ c = db.cursor()
 
 # UK post codes
 
-print "===> Importing UK postcodes"
+print("===> Importing UK postcodes")
 
 uk_id = get_country_id("GB")
 f = urllib.urlopen("http://www.npemap.org.uk/data/fulllist")
@@ -70,7 +70,7 @@ db.commit()
 
 # German post codes
 
-print "===> Importing German postcodes"
+print("===> Importing German postcodes")
 
 de_id = get_country_id("DE")
 f = urllib.urlopen("http://fa-technik.adfc.de/code/opengeodb/PLZ.tab")
@@ -91,11 +91,11 @@ db.commit()
 
 # US zip codes
 
-print "===> Downloading US zipcodes"
+print("===> Downloading US zipcodes")
 
 us_zip_path = imputils.zipex("http://mappinghacks.com/data/zipcode.zip", "zipcode.csv")
 
-print "===> Importing US zipcodes"
+print("===> Importing US zipcodes")
 
 us_id = get_country_id("US")
 f = codecs.open(us_zip_path, "rt", "utf-8")
