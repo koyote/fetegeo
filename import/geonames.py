@@ -30,6 +30,7 @@ try:
 except ImportError:
     import psycopg2 as dbmod
     import psycopg2.extensions
+
     psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 
 
@@ -46,47 +47,41 @@ TYPE_PLACE = 2
 
 ADMIN1_ABBRVS = {
     # Australia
-    "AU.01" : "ACT", "AU.02" : "NSW", "AU.03" : "NT", "AU.04" : "QLD", "AU.05" : "SA",
-    "AU.06" : "TAS", "AU.07" : "VIC", "AU.08" : "WA",
+    "AU.01": "ACT", "AU.02": "NSW", "AU.03": "NT", "AU.04": "QLD", "AU.05": "SA",
+    "AU.06": "TAS", "AU.07": "VIC", "AU.08": "WA",
     # Canada
-    "CA.01" : "AB", "CA.02" : "BC", "CA.03" : "MB", "CA.04" : "NB", "CA.05" : "NL", "CA.07" : "NS",
-    "CA.08" : "ON", "CA.09" : "PE", "CA.10" : "QC", "CA.11" : "SK", "CA.12" : "YT", "CA.13" : "NT",
-    "CA.14" : "NU",
+    "CA.01": "AB", "CA.02": "BC", "CA.03": "MB", "CA.04": "NB", "CA.05": "NL", "CA.07": "NS",
+    "CA.08": "ON", "CA.09": "PE", "CA.10": "QC", "CA.11": "SK", "CA.12": "YT", "CA.13": "NT",
+    "CA.14": "NU",
     # US
-    "US.AL" : "AL", "US.AK" : "AK", "US.AZ" : "AZ", "US.AR" : "AR", "US.CA" : "CA", "US.CO" : "CO",
-    "US.CT" : "CT", "US.DE" : "DE", "US.DC" : "DC", "US.FL" : "FL", "US.GA" : "GA", "US.HI" : "HI",
-    "US.ID" : "ID", "US.IL" : "IL", "US.IN" : "IN", "US.IA" : "IA", "US.KS" : "KS", "US.KY" : "KY",
-    "US.LA" : "LA", "US.ME" : "ME", "US.MD" : "MD", "US.MA" : "MA", "US.MI" : "MI", "US.MN" : "MN",
-    "US.MS" : "MS", "US.MO" : "MO", "US.MT" : "MT", "US.NE" : "NE", "US.NV" : "NV", "US.NH" : "NH",
-    "US.NJ" : "NJ", "US.NM" : "NM", "US.NY" : "NY", "US.NC" : "NC", "US.ND" : "ND", "US.OH" : "OH",
-    "US.OK" : "OK", "US.OR" : "OR", "US.PA" : "PA", "US.RI" : "RI", "US.SC" : "SC", "US.SD" : "SD",
-    "US.TN" : "TN", "US.TX" : "TX", "US.UT" : "UT", "US.VT" : "VT", "US.VA" : "VA", "US.WA" : "WA",
-    "US.WV" : "WV", "US.WI" : "WI", "US.WY" : "WY"
+    "US.AL": "AL", "US.AK": "AK", "US.AZ": "AZ", "US.AR": "AR", "US.CA": "CA", "US.CO": "CO",
+    "US.CT": "CT", "US.DE": "DE", "US.DC": "DC", "US.FL": "FL", "US.GA": "GA", "US.HI": "HI",
+    "US.ID": "ID", "US.IL": "IL", "US.IN": "IN", "US.IA": "IA", "US.KS": "KS", "US.KY": "KY",
+    "US.LA": "LA", "US.ME": "ME", "US.MD": "MD", "US.MA": "MA", "US.MI": "MI", "US.MN": "MN",
+    "US.MS": "MS", "US.MO": "MO", "US.MT": "MT", "US.NE": "NE", "US.NV": "NV", "US.NH": "NH",
+    "US.NJ": "NJ", "US.NM": "NM", "US.NY": "NY", "US.NC": "NC", "US.ND": "ND", "US.OH": "OH",
+    "US.OK": "OK", "US.OR": "OR", "US.PA": "PA", "US.RI": "RI", "US.SC": "SC", "US.SD": "SD",
+    "US.TN": "TN", "US.TX": "TX", "US.UT": "UT", "US.VT": "VT", "US.VA": "VA", "US.WA": "WA",
+    "US.WV": "WV", "US.WI": "WI", "US.WY": "WY"
 }
 
 # Some countries are commonly called by names other than their official names. The form of this is
 # [<main geonames name>, <iso 2 language code>, <alternative names 1>, ..., <alternative names n>].
 
 ALT_COUNTRY_NAMES = [["United States", "en", "America"], ["United Kingdom", "en", "Great Britain", "Great Britain"]]
-    
 
 _RE_SPLIT = re.compile("[ ,-/]")
 
 def _split(s):
-
     return [x.lower() for x in _RE_SPLIT.split(s)]
 
 
 def _hash_wd(s):
-
     return hash(s)
 
 
-
 def _hash_list(s):
-
     return hash("_".join(s))
-
 
 
 print("===> Connecting to database")
@@ -95,16 +90,12 @@ db = dbmod.connect(user="root", database="fetegeo")
 if hasattr(db, "set_client_encoding"):
     db.set_client_encoding("utf-8")
 
-
-
 print("===> Creating tables")
 
 f = open("tables", "rt")
 c = db.cursor()
 c.execute(f.read())
 f.close()
-
-
 
 print("===> Importing language codes")
 
@@ -120,14 +111,12 @@ for l in codecs.EncodedFile(f, "utf-8"):
 
     c.execute("""INSERT INTO lang (iso639_1, iso639_3, iso_name)
       VALUES (%(iso639_1)s, %(iso639_3)s, %(iso_name)s) RETURNING id;""",
-      dict(iso639_1=iso639_1, iso639_3=iso639_3, iso_name=iso_name))
+        dict(iso639_1=iso639_1, iso639_3=iso639_3, iso_name=iso_name))
     id = int(c.fetchone()[0])
     langs_map[iso639_1] = id
     langs_map[iso639_2] = id
     langs_map[iso639_3] = id
 f.close()
-
-
 
 print("===> Importing country codes")
 
@@ -137,10 +126,8 @@ for l in f:
     iso3, iso2 = l.strip().split("\t")
     c.execute("""INSERT INTO country (iso2, iso3)
       VALUES (%(iso2)s, %(iso3)s) RETURNING id;""",
-      dict(iso2=iso2, iso3=iso3))
+        dict(iso2=iso2, iso3=iso3))
     countries_map[iso2] = int(c.fetchone()[0])
-
-
 
 print("===> Importing country names")
 
@@ -166,8 +153,8 @@ for iso639_1 in langs:
         lwd = _split(name)[-1].lower() # Last word in name
         lwdh = _hash_wd(lwd)
         c.execute("""INSERT INTO country_name (country_id, lang_id, is_official, name, name_lwdh)
-          VALUES (%(country_id)s, %(lang_id)s, TRUE, %(name)s, %(name_lwdh)s)""", 
-          dict(country_id=country_id, lang_id=lang_id, name=name, name_lwdh=lwdh))
+          VALUES (%(country_id)s, %(lang_id)s, TRUE, %(name)s, %(name_lwdh)s)""",
+            dict(country_id=country_id, lang_id=lang_id, name=name, name_lwdh=lwdh))
 
 for alts in ALT_COUNTRY_NAMES:
     c.execute("SELECT country_id FROM country_name WHERE name=%(name)s", dict(name=alts[0]))
@@ -178,12 +165,11 @@ for alts in ALT_COUNTRY_NAMES:
         lwdh = _hash_wd(lwd)
         c.execute("""INSERT into country_name (country_id, lang_id, is_official, name, name_lwdh)
           VALUES  (%(country_id)s, %(lang_id)s, FALSE, %(name)s, %(name_lwdh)s)""",
-          dict(country_id=country_id, lang_id=lang_id, name=alt, name_lwdh=lwdh))
+            dict(country_id=country_id, lang_id=lang_id, name=alt, name_lwdh=lwdh))
 
 print()
 f.close()
 db.commit()
-
 
 print("===> Importing admin1 areas")
 
@@ -205,7 +191,7 @@ for l in codecs.EncodedFile(f, "utf-8"):
     country_id = countries_map[r[0][:2]]
 
     c.execute("INSERT INTO place (country_id, type) VALUES (%(country_id)s, %(type)s) RETURNING id",
-      dict(country_id=country_id, type=TYPE_STATE))
+        dict(country_id=country_id, type=TYPE_STATE))
     id = int(c.fetchone()[0])
     admin1_map[r[0]] = id
 
@@ -213,18 +199,17 @@ for l in codecs.EncodedFile(f, "utf-8"):
     name_hash = _hash_list(_split(r[1]))
     c.execute("""INSERT INTO place_name (place_id, lang_id, name, name_hash, is_official)
       VALUES (%(place_id)s, %(lang_id)s, %(name)s, %(name_hash)s, TRUE)""",
-      dict(place_id=id, lang_id=lang_id, name=r[1], name_hash=name_hash))
+        dict(place_id=id, lang_id=lang_id, name=r[1], name_hash=name_hash))
 
     if ADMIN1_ABBRVS.has_key(r[0]):
         # This admin1 area also has an abbreviation
         name_hash = _hash_list(_split(ADMIN1_ABBRVS[r[0]]))
         c.execute("""INSERT INTO place_name (place_id, lang_id, name, name_hash, is_official)
           VALUES (%(place_id)s, %(lang_id)s, %(name)s, %(name_hash)s, FALSE)""",
-          dict(place_id=id, lang_id=lang_id, name=ADMIN1_ABBRVS[r[0]], name_hash=name_hash))
+            dict(place_id=id, lang_id=lang_id, name=ADMIN1_ABBRVS[r[0]], name_hash=name_hash))
 
 f.close()
 db.commit()
-
 
 print("===> Importing admin2 areas")
 
@@ -234,16 +219,16 @@ f = urllib.urlopen("http://download.geonames.org/export/dump/admin2Codes.txt")
 admin2_map = {}
 for l in codecs.EncodedFile(f, "utf-8"):
     r = [x.strip() for x in l.split("\t")]
-    if r[0][0 : 2] == "GB" and r[1].startswith("County of "):
+    if r[0][0: 2] == "GB" and r[1].startswith("County of "):
         # For British data, geonames stores the name as e.g. "County of Somerset" so strip it down to
         # "Somerset" as no-one is going to type in "County of Somerset". Note that this intentionally
         # doesn't catch "County Durham" which must stay as it is.
-        name=asciiname=r[1][len("County of ") : ]
-    elif r[0][0 : 2] == "AU" and r[1].startswith("State of "):
-        name=asciiname=r[1][len("State of ") : ]
+        name = asciiname = r[1][len("County of "):]
+    elif r[0][0: 2] == "AU" and r[1].startswith("State of "):
+        name = asciiname = r[1][len("State of "):]
     else:
-        name=r[1]
-        asciiname=r[2]
+        name = r[1]
+        asciiname = r[2]
 
     # Admin2 IDs are of the form "GB.ENG.M3" and so on. Any that aren't are considered invalid.
     if len(r[0].split(".")[0]) != 2:
@@ -258,7 +243,7 @@ for l in codecs.EncodedFile(f, "utf-8"):
 
     c.execute("""INSERT INTO place (country_id, parent_id, type) VALUES (%(country_id)s,
       %(admin1_id)s, %(type)s) RETURNING id""",
-      dict(country_id=country_id, admin1_id=admin1_id, type=TYPE_COUNTY))
+        dict(country_id=country_id, admin1_id=admin1_id, type=TYPE_COUNTY))
     id = int(c.fetchone()[0])
     admin2_map[r[0]] = id
 
@@ -266,17 +251,16 @@ for l in codecs.EncodedFile(f, "utf-8"):
     name_hash = _hash_list(_split(name))
     c.execute("""INSERT INTO place_name (place_id, lang_id, name, name_hash, is_official)
       VALUES (%(place_id)s, %(lang_id)s, %(name)s, %(name_hash)s, TRUE)""",
-      dict(place_id=id, lang_id=lang_id, name=name, name_hash=name_hash))
+        dict(place_id=id, lang_id=lang_id, name=name, name_hash=name_hash))
 
     if asciiname != name:
         name_hash = _hash_list(_split(asciiname))
         c.execute("""INSERT INTO place_name (place_id, lang_id, name, name_hash, is_official)
           VALUES (%(place_id)s, %(lang_id)s, %(name)s, %(name_hash)s, FALSE)""",
-          dict(place_id=id, lang_id=lang_id, name=asciiname, name_hash=name_hash))
+            dict(place_id=id, lang_id=lang_id, name=asciiname, name_hash=name_hash))
 
 f.close()
 db.commit()
-
 
 print("===> Importing country codes")
 
@@ -307,12 +291,12 @@ c.execute("SELECT nextval('place_id_seq')")
 place_id = c.fetchone()[0]
 i = 0
 for iso2 in countries_map.keys():
-    sys.stdout.write("===> [%d%%] Processing %s data... downloading... " % ((i * (100.0/len(countries_map)), iso2)))
+    sys.stdout.write("===> [%d%%] Processing %s data... downloading... " % ((i * (100.0 / len(countries_map)), iso2)))
     sys.stdout.flush()
     i += 1
 
     cn_path = imputils.zipex("http://download.geonames.org/export/dump/%s.zip" % iso2, "%s.txt" % iso2)
-    
+
     sys.stdout.write("collating... ")
     sys.stdout.flush()
     f = codecs.open(cn_path, "rt", "utf-8")
@@ -327,21 +311,21 @@ for iso2 in countries_map.keys():
 
     for l in f:
         r = [x.strip() for x in l.split("\t")]
-        
+
         geonames_id = r[GEONAMEID]
 
         if r[COUNTRY_CODE] == "GB" and r[NAME].startswith("County of "):
             # For British data, geonames stores the name as e.g. "County of Somerset" so strip it down to
             # "Somerset" as no-one is going to type in "County of Somerset". Note that this intentionally
             # doesn't catch "County Durham" which must stay as it is.
-            name=asciiname=r[ASCIINAME][len("County of ") : ]
+            name = asciiname = r[ASCIINAME][len("County of "):]
         elif r[COUNTRY_CODE] == "AU" and r[NAME].startswith("State of "):
-            name=asciiname=r[ASCIINAME][len("State of ") : ]
+            name = asciiname = r[ASCIINAME][len("State of "):]
         elif r[COUNTRY_CODE] == "US" and r[NAME].endswith(", City of"):
-            name=asciiname="City of %s" % r[ASCIINAME][ : len(", City of")]
+            name = asciiname = "City of %s" % r[ASCIINAME][: len(", City of")]
         else:
-            name=r[NAME]
-            asciiname=r[ASCIINAME]
+            name = r[NAME]
+            asciiname = r[ASCIINAME]
 
         country_id = countries_map[r[COUNTRY_CODE]]
         parent_id = "\\N" # postgres's way of saying "NULL"
@@ -391,11 +375,10 @@ for iso2 in countries_map.keys():
 c.execute("SELECT setval ('place_id_seq', %(place_id)s)", dict(place_id=place_id))
 db.commit()
 
-
 print("===> Downloading alternative names")
 
 alt_path = imputils.zipex("http://download.geonames.org/export/dump/alternateNames.zip",
-  "alternateNames.txt")
+    "alternateNames.txt")
 
 print("===> Importing alternative names")
 
@@ -433,12 +416,12 @@ for l in f:
     else:
         last_geonames_id = geonames_id
         c.execute("SELECT id FROM place WHERE geonames_id=%(geonames_id)s",
-          dict(geonames_id=geonames_id))
+            dict(geonames_id=geonames_id))
         if c.rowcount == 0:
             last_id = None
             continue
         last_id = place_id = c.fetchone()[0]
-    
+
     if r[ISOLANGUAGE] == "":
         lang_id = None
     elif not langs_map.has_key(r[ISOLANGUAGE]):
@@ -449,14 +432,12 @@ for l in f:
     name_hash = _hash_list(_split(r[ALTERNATE_NAME]))
 
     place_name_buf.append(dict(place_id=place_id, lang_id=lang_id, name=r[ALTERNATE_NAME],
-      name_hash=name_hash, is_official=False))
+        name_hash=name_hash, is_official=False))
 
 c.executemany(place_name_query, place_name_buf)
 place_name_buf = []
 
 print()
-
-
 
 print("===> Final commit")
 

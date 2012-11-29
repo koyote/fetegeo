@@ -23,8 +23,6 @@ import Free_Text, Temp_Cache
 import UK, US
 
 
-
-
 TYPE_STATE = 0
 TYPE_COUNTY = 1
 TYPE_PLACE = 2
@@ -32,23 +30,17 @@ TYPE_PLACE = 2
 # For countries we record as a pair (print county, print state).
 
 _DEFAULT_FORMAT = (True, True)
-_COUNTRY_FORMATS = {"GB" : (True, False), "DE" : (False, True), "FR" : (False, True),
-  "US" : (False, True)}
-
-
+_COUNTRY_FORMATS = {"GB": (True, False), "DE": (False, True), "FR": (False, True),
+                    "US": (False, True)}
 
 
 class Queryier:
-
     def __init__(self):
-
         self.flush_caches()
 
 
-
     def flush_caches(self):
-
-        self.country_id_iso2_cache = {} # These are both too small 
+        self.country_id_iso2_cache = {} # These are both too small
         self.country_iso2_id_cache = {} # to bother with a cached dict.
         self.country_name_cache = {}
         self.place_cache = Temp_Cache.Cached_Dict(Temp_Cache.LARGE_CACHE_SIZE)
@@ -58,12 +50,9 @@ class Queryier:
         self.results_cache = Temp_Cache.Cached_Dict(Temp_Cache.SMALL_CACHE_SIZE)
 
 
-
     def name_to_lat_long(self, db, lang_ids, find_all, allow_dangling, qs, host_country_id):
-
         return Free_Text.Free_Text().name_to_lat_long(self, db, lang_ids, find_all, allow_dangling,
             qs, host_country_id)
-
 
 
     #
@@ -71,9 +60,8 @@ class Queryier:
     #
 
     def mk_cols_map(self, c):
-
         map = {}
-        i = 0 
+        i = 0
         for col in c.description:
             assert not map.has_key(col[0])
             map[col[0]] = i
@@ -82,33 +70,33 @@ class Queryier:
         return map
 
 
-
     def get_country_id_from_iso2(self, ft, iso2):
+        if not iso2:
+            return None
 
         if not self.country_id_iso2_cache.has_key(iso2):
             c = ft.db.cursor()
-            c.execute("SELECT id FROM country WHERE iso2=%(iso2)s", dict(iso2=iso2))
+            c.execute("SELECT country_id FROM country WHERE iso3166_2=%(iso2)s", dict(iso2=iso2))
             assert c.rowcount == 1
             self.country_id_iso2_cache[iso2] = c.fetchone()[0]
 
         return self.country_id_iso2_cache[iso2]
 
 
-
     def get_country_iso2_from_id(self, ft, country_id):
+        if not country_id:
+            return None
 
         if not self.country_iso2_id_cache.has_key(country_id):
             c = ft.db.cursor()
-            c.execute("SELECT iso2 FROM country WHERE id=%(id)s", dict(id=country_id))
+            c.execute("SELECT iso3166_2 FROM country WHERE country_id=%(id)s", dict(id=country_id))
             assert c.rowcount == 1
             self.country_iso2_id_cache[country_id] = c.fetchone()[0]
 
         return self.country_iso2_id_cache[country_id]
 
 
-
     def country_name_id(self, ft, country_id):
-
         cache_key = (ft.lang_ids[0], country_id)
         if self.country_name_cache.has_key(cache_key):
             return self.country_name_cache[cache_key]
@@ -118,11 +106,16 @@ class Queryier:
         # Since we have country name data for every language, we can simply pluck the first language
         # from the list.
 
-        c.execute("""SELECT name FROM country_name
-          WHERE country_id=%(country_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
-          dict(country_id=country_id, lang_id=ft.lang_ids[0]))
+        #        c.execute("""SELECT name FROM place_name
+        #          WHERE country_id=%(country_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
+        #            dict(country_id=country_id, lang_id=ft.lang_ids[0]))
 
-        assert c.rowcount == 1
+        c.execute("""SELECT place_name.name FROM place_name, place
+                  WHERE place.place_id=place_name.place_id AND place.country_id=%(country_id)s AND place_name.lang_id=%(lang_id)s""",
+            dict(country_id=country_id, lang_id=ft.lang_ids[0]))
+
+        if c.rowcount != 1:
+            return None
 
         name = c.fetchone()[0]
 
@@ -131,9 +124,7 @@ class Queryier:
         return name
 
 
-
     def name_place_id(self, ft, place_id):
-
         cache_key = (tuple(ft.lang_ids), ft.host_country_id, place_id)
         if self.place_name_cache.has_key(cache_key):
             return self.place_name_cache[cache_key]
@@ -141,14 +132,13 @@ class Queryier:
         c = ft.db.cursor()
 
         for lang_id in ft.lang_ids:
-            c.execute("""SELECT name FROM place_name
-              WHERE place_id=%(place_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
-              dict(place_id=place_id, lang_id=lang_id))
-
-            if c.rowcount == 0:
-                c.execute("""SELECT name FROM place_name
-                  WHERE place_id=%(place_id)s AND lang_id=%(lang_id)s""",
-                  dict(place_id=place_id, lang_id=lang_id))
+        #            c.execute("""SELECT name FROM place_name
+        #              WHERE place_id=%(place_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
+        #                dict(place_id=place_id, lang_id=lang_id))
+        #
+        #            if c.rowcount == 0:
+            c.execute("""SELECT name FROM place_name WHERE place_id=%(place_id)s AND lang_id=%(lang_id)s""",
+                dict(place_id=place_id, lang_id=lang_id))
 
             if c.rowcount > 0:
                 name = c.fetchone()[0]
@@ -157,12 +147,12 @@ class Queryier:
 
         # We couldn't find anything in the required languages.
 
-        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s AND is_official=TRUE",
-          dict(place_id=place_id))
-
-        if c.rowcount == 0:
-            c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s",
-               dict(place_id=place_id))
+            #        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s AND is_official=TRUE",
+            #            dict(place_id=place_id))
+            #
+            #        if c.rowcount == 0:
+        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s",
+            dict(place_id=place_id))
 
         name = c.fetchone()[0]
         self.place_name_cache[cache_key] = name
@@ -170,9 +160,7 @@ class Queryier:
         return name
 
 
-
     def pp_place_id(self, ft, place_id):
-
         cache_key = (tuple(ft.lang_ids), ft.host_country_id, place_id)
         if self.place_pp_cache.has_key(cache_key):
             return self.place_pp_cache[cache_key]
@@ -181,7 +169,20 @@ class Queryier:
 
         pp = self.name_place_id(ft, place_id)
 
-        c.execute("SELECT parent_id, country_id, type from place WHERE id=%(id)s", dict(id=place_id))
+        # TODO: Find out what this does and do a proper job at returning an array of correct ids
+        c.execute("SELECT type_id FROM type WHERE name=%(county)s", dict(county='county'))
+        if c.rowcount == 1:
+            TYPE_COUNTY = c.fetchone()[0]
+        else:
+            TYPE_COUNTY = '0'
+        c.execute("SELECT type_id FROM type WHERE name=%(state)s", dict(state='state'))
+        if c.rowcount == 1:
+            TYPE_STATE = c.fetchone()[0] 
+        else:
+            TYPE_STATE = '0'
+
+
+        c.execute("SELECT parent_id, country_id, type_id from place WHERE place_id=%(id)s", dict(id=place_id))
         assert c.rowcount == 1
 
         parent_id, country_id, type = c.fetchone()
@@ -193,7 +194,7 @@ class Queryier:
             format = _DEFAULT_FORMAT
 
         while parent_id is not None:
-            c.execute("""SELECT parent_id, type from place WHERE id=%(id)s""", dict(id=parent_id))
+            c.execute("""SELECT parent_id, type_id from place WHERE place_id=%(id)s""", dict(id=parent_id))
             new_parent_id, type = c.fetchone()
             if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
                 pp = "%s, %s" % (pp, self.name_place_id(ft, parent_id))

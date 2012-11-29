@@ -20,70 +20,50 @@
 
 
 class Result:
-
     def __init__(self, ri, dangling):
-    
         self.ri = ri
         self.dangling = dangling
 
 
-
     def to_xml(self):
-    
         return u"""<result>
 %s
 <dangling>%s</dangling>
 </result>""" % (self.ri.to_xml(), self.dangling)
 
 
-
 class RCountry:
-
     def __init__(self, id, name, pp):
-    
         self.id = id
         self.name = name
         self.pp = pp
 
 
-
     def to_xml(self):
-    
         return u"""<country>
 <id>%s</id>
 <name>%s</name>
 <pp>%s</pp>
 </country>""" % (self.id, self.name, self.pp)
-    
-
 
 
 class RPlace:
-
-    def __init__(self, id, name, lat, long, country_id, parent_id, population, pp):
-
+    def __init__(self, id, name, location, country_id, parent_id, population, pp):
         self.id = id
         self.name = name
-        self.lat = lat
-        self.long = long
+        self.location = location
         self.country_id = country_id
         self.parent_id = parent_id
         self.population = population
         self.pp = pp
 
-
+    #TODO: FIX LOCATION TO BE DISPLAYED PROPERLY
 
     def to_xml(self):
-    
-        if self.lat is not None:
-            lat_txt = "\n<lat>%s</lat>" % str(self.lat)
-        else:
-            lat_txt = ""
-
-        if self.long is not None:
-            long_txt = "\n<long>%s</long>" % str(self.long)
-        else:
-            long_txt = ""
+        #if self.location is not None:
+        #    location_txt = "\n<lat>%s</lat>" % str(self.location)
+        #else:
+        location_txt = ""
 
         if self.parent_id is not None:
             parent_id_txt = "\n<parent_id>%s</parent_id>" % str(self.parent_id)
@@ -94,22 +74,18 @@ class RPlace:
             population_txt = "\n<population>%s</population>" % str(self.population)
         else:
             population_txt = ""
-    
+
         return u"""<place>
 <id>%d</id>
-<name>%s</name>%s%s
+<name>%s</name>%s
 <country_id>%s</country_id>%s%s
 <pp>%s</pp>
-</place>""" % (self.id, self.name, lat_txt, long_txt, self.country_id,
+</place>""" % (self.id, self.name, location_txt, self.country_id,
                parent_id_txt, population_txt, self.pp)
 
 
-
-
 class RPost_Code:
-
     def __init__(self, id, country_id, lat, long, pp):
-
         self.id = id
         self.country_id = country_id
         self.lat = lat
@@ -118,9 +94,7 @@ class RPost_Code:
         self.dangling = ""
 
 
-
     def to_xml(self):
-    
         return u"""<postcode>
 <id>%d</id>
 <country_id>%s</country_id>

@@ -26,14 +26,12 @@ import imp, re, os, SocketServer, sys, xml.dom.minidom as minidom
 try:
     import psycopg2 as dbmod
     import psycopg2.extensions
+
     psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 except ImportError:
     import pgdb as dbmod
 
-
 import Geo.Queryier
-
-
 
 
 _DEFAULT_HOST = ""
@@ -50,19 +48,15 @@ _RE_FALSE = re.compile("false")
 _SOCK_BUF = 1024
 
 
-
-
 class Fetegeos_Handler(SocketServer.BaseRequestHandler):
-
     def __init__(self, req, client_addr, server):
-
         if dbmod.threadsafety == 2 or dbmod.threadsafety == 3:
             # Connections can be shared between threads safely, so reuse the main server connection.
             self._db = server.db
         else:
             # Connections can't be shared between threads safely, so for every thread we have to
             # make a new connection.
-            self._db = dbmod.connect(user="root", database="fetegeo")
+            self._db = dbmod.connect(user="koy", database="osm")
             try:
                 self.db.set_client_encoding('utf-8')
             except:
@@ -71,18 +65,14 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         SocketServer.BaseRequestHandler.__init__(self, req, client_addr, server)
 
 
-
     def _error(self, msg):
-
         self.request.send("<error>%s</error>" % msg)
         self.request.close()
         # We now kill this thread only.
         sys.exit(0)
 
 
-
     def handle(self):
-
         buf = ""
         while True:
             data = self.request.recv(_SOCK_BUF)
@@ -103,9 +93,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
             return
 
 
-
     def _get_qe(self, name, default=None):
-
         r = self._dom.getElementsByTagName(name)
         if len(r) == 0:
             return default
@@ -114,7 +102,6 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
             return r[0].childNodes[0].data
         else:
             return None
-
 
 
     def _get_country_id(self, iso):
@@ -130,15 +117,13 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         return None
 
 
-
     def _get_lang_ids(self):
-
         c = self._db.cursor()
         r = self._dom.getElementsByTagName("lang")
         lang_ids = []
         for e in r:
             iso639_1 = e.childNodes[0].data
-            c.execute("SELECT id FROM lang WHERE iso639_1=%(iso639_1)s", dict(iso639_1=iso639_1))
+            c.execute("SELECT lang_id FROM lang WHERE iso639_1=%(iso639_1)s", dict(iso639_1=iso639_1))
             assert c.rowcount < 2
             if c.rowcount == 0:
                 self._error("Unknown language '%s'." % e.childNodes[0].data)
@@ -147,9 +132,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         return lang_ids
 
 
-
     def _q_geo(self):
-
         fa_txt = self._dom.firstChild.getAttribute("find_all")
         if _RE_TRUE.match(fa_txt):
             find_all = True
@@ -179,9 +162,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         self.request.close()
 
 
-
     def _q_ctry(self):
-
         lang_ids = self._get_lang_ids()
 
         qs = self._get_qe("qs")
@@ -198,7 +179,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
 
         c.execute("""SELECT name FROM country_name
           WHERE country_id=%(cntry_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
-          dict(cntry_id=cntry_id, lang_id=lang_ids[0]))
+            dict(cntry_id=cntry_id, lang_id=lang_ids[0]))
         assert c.rowcount == 1
 
         self.request.sendall("<result><country><name>%s</name></country></result>" % c.fetchone()[0])
@@ -206,15 +187,10 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         self.request.close()
 
 
-
-
-
 class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
-
     def __init__(self, addr, rhc):
-    
         # Load the config file
-    
+
         for dir in _CONF_DIRS:
             conf_path = os.path.join(dir, _CONF_LEAF)
             if os.path.exists(conf_path):
@@ -222,7 +198,7 @@ class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
         else:
             sys.stderr.write("Error: No config file found.")
             sys.exit(1)
-        
+
         f = open(conf_path, "r")
         # We fool load_source by pretending the config file comes from /dev/null,
         # which (because it's a filename without a "." in it, but which is
@@ -231,17 +207,17 @@ class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
         # plain ugly.
         self._config = imp.load_source("config", "/dev/null", f)
         f.close()
-    
+
         # Setup the server
-    
+
         self.allow_reuse_address = True # XXX
         SocketServer.TCPServer.__init__(self, addr, rhc)
-        
+
         self.queryier = Geo.Queryier.Queryier()
-        
+
         if dbmod.threadsafety == 2 or dbmod.threadsafety == 3:
             # Connections can be shared between threads safely so we connect only once.
-            self.db = dbmod.connect(user="root", database="fetegeo")
+            self.db = dbmod.connect(user="koy", database="osm")
             try:
                 self.db.set_client_encoding('utf-8')
             except:
@@ -249,10 +225,9 @@ class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
 
 
     def verify_request(self, request, client_address):
-    
         # Check that client_address is an IP address allowed to connect to fetegeos.
         # NOTE: This is rather IP4 specific at the moment.
-    
+
         split_client_address = client_address[0].split(".")
         for addr in self._config.accept_connect:
             split_addr = addr.split(".")
@@ -264,8 +239,6 @@ class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
                         return False
                 return True
         return False
-
-
 
 
 if __name__ == "__main__":

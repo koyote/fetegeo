@@ -21,9 +21,7 @@
 # IN THE SOFTWARE.
 
 
-import glob, os, subprocess, sys
-
-
+import glob, subprocess, sys
 
 
 PY_EXT = ".py"
@@ -31,9 +29,6 @@ PY_EXT = ".py"
 COMMENT_PREFIX = "#"
 SHELL_PREFIX = "$ "
 NO_MATCH = "No match found."
-
-
-
 
 if len(sys.argv) == 1:
     paths = glob.glob("*")
@@ -46,7 +41,7 @@ for path in paths:
         continue
 
     print(path)
-    
+
     f = open(path, "r")
     f_lines = [x.strip() for x in f if not x.startswith(COMMENT_PREFIX)]
     if not f_lines[0].startswith(SHELL_PREFIX):
@@ -61,12 +56,12 @@ for path in paths:
 
     if f_lines[1] == NO_MATCH and sp.returncode == 1:
         continue
-    
+
     for l in f_lines[1:]:
         if not l in stdout_lines:
             if l.startswith("id:"):
                 continue
-            
+
             print("Not found:\n  %s\nin:  " % l)
             print("\n  ".join(stdout_lines))
             sys.exit(1)

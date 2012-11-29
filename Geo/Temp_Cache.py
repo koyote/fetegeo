@@ -36,33 +36,27 @@ SMALL_CACHE_SIZE = 1000
 LARGE_CACHE_SIZE = 5000
 
 class Cached_Dict:
-
     def __init__(self, max_size):
-    
         self._max_size = max_size
-    
+
         self._lock = threading.Lock()
-    
+
         self._current = {}
         self._old = {}
 
 
-
     def has_key(self, k):
-    
         self._lock.acquire()
         try:
             if self._current.has_key(k) or self._old.has_key(k):
                 return True
         finally:
             self._lock.release()
-        
+
         return False
 
 
-
     def __getitem__(self, k):
-    
         self._lock.acquire()
         try:
             try:
@@ -82,9 +76,7 @@ class Cached_Dict:
         raise KeyError(k)
 
 
-
     def __setitem__(self, k, i):
-    
         self._lock.acquire()
         try:
             if len(self._current) > self._max_size:

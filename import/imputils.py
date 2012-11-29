@@ -27,7 +27,6 @@ import os, tempfile, urllib
 #
 
 def zipex(url, extract_path):
-
     zip_fno, zip_path = tempfile.mkstemp()
     u = urllib.urlopen(url)
     os.write(zip_fno, u.read())

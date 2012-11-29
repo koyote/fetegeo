@@ -23,15 +23,10 @@ import re
 import Results
 
 
-
-
 _RE_US_ZIP_PLUS4 = re.compile("[0-9]{4}")
 
 
-
-
 def postcode_match(ft, i):
-
     for match, new_i in _sub_pc_match(ft, i):
         yield match, new_i
 
@@ -40,15 +35,13 @@ def postcode_match(ft, i):
             yield match, new_i
 
 
-
 def _sub_pc_match(ft, i):
-
     us_id = ft.queryier.get_country_id_from_iso2(ft, "US")
 
     c = ft.db.cursor()
 
     c.execute("SELECT * FROM postcode WHERE lower(main)=%(main)s AND country_id=%(us_id)s",
-      dict(main=ft.split[i], us_id=us_id))
+        dict(main=ft.split[i], us_id=us_id))
 
     cols_map = ft.queryier.mk_cols_map(c)
     for cnd in c.fetchall():
@@ -61,9 +54,8 @@ def _sub_pc_match(ft, i):
             pp = "%s, %s" % (pp, ft.queryier.country_name_id(ft, cnd[cols_map["country_id"]]))
 
         match = Results.RPost_Code(cnd[cols_map["id"]], cnd[cols_map["country_id"]],
-          cnd[cols_map["lat"]], cnd[cols_map["long"]], pp)
+            cnd[cols_map["lat"]], cnd[cols_map["long"]], pp)
         yield match, i - 1
-
 
 
 #
@@ -71,18 +63,15 @@ def _sub_pc_match(ft, i):
 #
 
 def mk_pp(ft, pp):
-
     us_id = ft.queryier.get_country_id_from_iso2(ft, "US")
-    
+
     if ft.host_country_id == us_id:
         return pp
 
     return "%s, %s" % (pp, ft.queryier.country_name_id(ft, us_id))
 
 
-
 def pp_place_id(ft, place_id):
-
     pp = ft.queryier.name_place_id(ft, place_id)
 
     c = ft.db.cursor()
@@ -90,13 +79,13 @@ def pp_place_id(ft, place_id):
     # For US places, the convention is to include the state name but not the county, so we iterate
     # until we find a place without a parent id, assuming that is the US state.
 
-    cnd_id = place_id    
+    cnd_id = place_id
     while True:
         c.execute("SELECT parent_id FROM place WHERE id=%(id)s", dict(id=cnd_id))
         parent_id = c.fetchone()[0]
-        
+
         if parent_id is None:
             pp = "%s, %s" % (pp, ft.queryier.name_place_id(ft, cnd_id))
             return mk_pp(ft, pp)
-        
+
         cnd_id = parent_id
