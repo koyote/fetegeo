@@ -428,6 +428,7 @@ class Free_Text:
             pp = cnd[cols_map["main"]]
 
             if country_id is None or country_id != self.host_country_id:
+                logging.debug("pretty print for country postcode")
                 pp = "%s, %s" % (pp, self.queryier.country_name_id(self,
                     cnd[cols_map["country_id"]]))
 

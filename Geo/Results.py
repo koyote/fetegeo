@@ -63,7 +63,7 @@ class RPlace:
         #if self.location is not None:
         #    location_txt = "\n<lat>%s</lat>" % str(self.location)
         #else:
-        location_txt = ""
+        location_txt = "\n<location>%s</location>" % str(self.location)
 
         if self.parent_id is not None:
             parent_id_txt = "\n<parent_id>%s</parent_id>" % str(self.parent_id)

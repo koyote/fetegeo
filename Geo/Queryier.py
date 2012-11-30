@@ -114,8 +114,10 @@ class Queryier:
                   WHERE place.place_id=place_name.place_id AND place.country_id=%(country_id)s AND place_name.lang_id=%(lang_id)s""",
             dict(country_id=country_id, lang_id=ft.lang_ids[0]))
 
-        if c.rowcount != 1:
-            return None
+        print("Found: "+str(c.rowcount)+" country names")
+
+        #if c.rowcount != 1:
+        #    return None
 
         name = c.fetchone()[0]
 
