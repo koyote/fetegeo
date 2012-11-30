@@ -171,7 +171,7 @@ class Queryier:
 
         pp = self.name_place_id(ft, place_id)
 
-        # TODO: Find out what this does and do a proper job at returning an array of correct ids
+        # TODO: Maybe save admin_level and parse that?
         c.execute("SELECT type_id FROM type WHERE name=%(county)s", dict(county='county'))
         if c.rowcount == 1:
             TYPE_COUNTY = c.fetchone()[0]
@@ -196,10 +196,13 @@ class Queryier:
             format = _DEFAULT_FORMAT
 
         while parent_id is not None:
+
             c.execute("""SELECT parent_id, type_id from place WHERE place_id=%(id)s""", dict(id=parent_id))
             new_parent_id, type = c.fetchone()
-            if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
-                pp = "%s, %s" % (pp, self.name_place_id(ft, parent_id))
+
+            #if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
+            pp = "%s, %s" % (pp, self.name_place_id(ft, parent_id))
+            print(str(parent_id)+" ParentID NAME: "+str(self.name_place_id(ft, parent_id)))
             parent_id = new_parent_id
 
         if country_id != ft.host_country_id:

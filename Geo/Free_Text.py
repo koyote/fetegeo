@@ -271,20 +271,21 @@ class Free_Text:
             if self.queryier.place_cache.has_key(cache_key):
                 places = self.queryier.place_cache[cache_key]
             else:
-                c.execute("""SELECT DISTINCT ON (place_id, name)
-                  place.place_id, name, ST_AsGeoJSON(location) as location, country_id, parent_id, population
+                c.execute("""SELECT DISTINCT ON (place.place_id, place_name.name)
+                  place.place_id, place_name.name, ST_AsGeoJSON(place.location) as location, place.country_id, place.parent_id, place.population
                   FROM place, place_name
-                  WHERE name_hash=%(name_hash)s AND place.place_id=place_name.place_id""" + country_sstr,
+                  WHERE place_name.name_hash=%(name_hash)s AND place.place_id=place_name.place_id""" + country_sstr,
                     dict(name_hash=sub_hash, country_id=country_id))
                 places = c.fetchall()
-                logging.debug(str(c.rowcount)+" FOUND: ")
+                logging.debug(str(c.rowcount)+" FOUND PLACE")
                 self.queryier.place_cache[cache_key] = places
 
             for place_id, name, location, sub_country_id, parent_id, population in places:
+                logging.debug("INSIDE INNER PLACE RESULTS LOOP")
                 # Don't get caught out by e.g. a capital city having the same name as a state.            
                 if place_id in parent_places:
                     continue
-
+                logging.debug("PLACE WASN'T IN PARENT_PLACES")
                 if postcode is not None:
                     # We've got a match, but we've also previously matched a postcode.
 
@@ -301,7 +302,7 @@ class Free_Text:
 
                 new_i = _match_end_split(self.split, i, name)
                 assert new_i < i
-
+                logging.debug("new_i: "+str(new_i))
                 new_parent_places = [place_id] + parent_places
                 record_match = False
                 if new_i == -1:
@@ -366,6 +367,7 @@ class Free_Text:
     #
 
     def _find_parent(self, find_id, place_id):
+        logging.debug("INSIDE _find_parent")
         cache_key = (find_id, place_id)
         if self.queryier.parent_cache.has_key(cache_key):
             pass
@@ -374,8 +376,10 @@ class Free_Text:
         c = self.db.cursor()
 
         c.execute("""SELECT parent_id FROM place WHERE place_id=%(place_id)s""", dict(place_id=place_id))
-        assert c.rowcount == 1
+        assert c.rowcount == 1 #maybe make this less strict??
         parent_id = c.fetchone()[0]
+        logging.debug("FOUND PARENT_ID "+str(parent_id))
+        logging.debug("FIND_ID "+str(find_id))
         if parent_id is None:
             self.queryier.parent_cache[cache_key] = False
             return False
@@ -428,7 +432,6 @@ class Free_Text:
             pp = cnd[cols_map["main"]]
 
             if country_id is None or country_id != self.host_country_id:
-                logging.debug("pretty print for country postcode")
                 pp = "%s, %s" % (pp, self.queryier.country_name_id(self,
                     cnd[cols_map["country_id"]]))
 
