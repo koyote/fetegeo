@@ -34,7 +34,7 @@ _Q_GEO = 0
 _Q_CTRY = 1
 
 _TAG_LONG_NAMES = {"dangling": "Dangling text", "place": "Place", "id": "ID", "name": "Name",
-                   "lat": "Latitude", "long": "Longitude", "country_id": "Country ID", "parent_id": "Parent ID",
+                   "location": "Location", "country_id": "Country ID", "parent_id": "Parent ID",
                    "population": "Population", "pp": "PP"}
 
 _SHORT_USAGE_MSG = """Usage:

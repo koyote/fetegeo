@@ -85,11 +85,10 @@ class RPlace:
 
 
 class RPost_Code:
-    def __init__(self, id, country_id, lat, long, pp):
+    def __init__(self, id, country_id, location, pp):
         self.id = id
         self.country_id = country_id
-        self.lat = lat
-        self.long = long
+        self.location = location
         self.pp = pp
         self.dangling = ""
 
@@ -98,7 +97,6 @@ class RPost_Code:
         return u"""<postcode>
 <id>%d</id>
 <country_id>%s</country_id>
-<lat>%s</lat>
-<long>%s</long>
+<location>%s</location>
 <pp>%s</pp>
-</postcode>""" % (self.id, str(self.country_id), str(self.lat), str(self.long), self.pp)
+</postcode>""" % (self.id, str(self.country_id), str(self.location), self.pp)

@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import re, hashlib
+import re, hashlib, logging
 import Results, UK, US
 
 
@@ -28,10 +28,9 @@ _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
 _RE_SQUASH_SPACES = re.compile(" +")
 _RE_SPLIT = re.compile("[ ,-/]")
 
+logging.basicConfig(level=logging.DEBUG)
 
 
-
-#
 
 class Free_Text:
     def name_to_lat_long(self, queryier, db, lang_ids, find_all, allow_dangling, qs, host_country_id):
@@ -43,6 +42,8 @@ class Free_Text:
         self.qs = _cleanup(qs)
         self.split, self.split_indices = _split(self.qs)
         self.host_country_id = host_country_id
+
+        logging.debug("Inside name_to_lat_long with: "+qs)
 
         results_cache_key = (tuple(lang_ids), find_all, allow_dangling, self.qs, host_country_id)
         if queryier.results_cache.has_key(results_cache_key):
@@ -72,6 +73,8 @@ class Free_Text:
         # administrative units have spaces in them.
 
         for country_id, i in self._iter_country():
+
+            logging.debug("Inside _iter_country forloop with: "+str(country_id)+" and i: "+str(i))
             if i == -1:
                 # geonames doesn't have lat / long data for countries directly, but includes them as
                 # places in the country file. Which is the worst of all possible worlds
@@ -83,6 +86,7 @@ class Free_Text:
                 continue
 
             for parent_places, postcode, j in self._iter_places(i, country_id):
+                logging.debug("Inside _iter_places forloop with: parent_places "+str(parent_places)+" postcode "+str(postcode))
                 if postcode is not None and j + 1 <= self._longest_match:
                     done_key = (postcode.id, j)
                     if done_key in self._matched_postcodes:
@@ -188,6 +192,9 @@ class Free_Text:
 
 
     def _iter_country(self):
+
+        logging.debug("Inside _iter_country FUNCTION for: "+self.split[-1])
+
         if self.host_country_id is not None:
             # First of all, we try and do the search as if we're in the host country. This is to
             # catch cases where the name (possibly abbreviated) of an administrative area of the
@@ -207,20 +214,26 @@ class Free_Text:
                 # reasonably be expected to specify "UK" so we hack that in.
                 iso2_cnd = "gb"
 
-            c.execute("SELECT id FROM country WHERE iso3166_2=%(iso2)s", dict(iso2=iso2_cnd.upper()))
+            c.execute("SELECT country_id FROM country WHERE iso3166_2=%(iso2)s", dict(iso2=iso2_cnd.upper()))
             if c.rowcount > 0:
                 assert c.rowcount == 1
                 country_id = c.fetchone()[0]
+                logging.debug("Found ID: " +str(country_id))
                 yield country_id, len(self.split) - 2
+
 
         # Finally try and match a full country name. Note that we're agnostic over the language used to
         # specify the country name.
 
         c.execute(
             """SELECT place.country_id, place_name.name FROM place, place_name, type WHERE place_name.place_id=place.place_id
-            AND place_name.type_id=type.type_id AND type.name='country' AND place_name.name_hash=%(name_lwdh)s""",
+            AND place.type_id=type.type_id AND type.name='country' AND place_name.name_hash=%(name_lwdh)s""",
             dict(name_lwdh=_hash_wd(self.split[-1])))
         cols_map = self.queryier.mk_cols_map(c)
+
+        logging.debug("Columns: " +", ".join(cols_map))
+        logging.debug("Rows: " +str(c.rowcount))
+
 
         done = set()
         for cnd in c.fetchall():
@@ -228,6 +241,8 @@ class Free_Text:
 
             country_id = cnd[cols_map["country_id"]]
             done_key = (country_id, new_i)
+            logging.debug("Results: " +str(cnd))
+            logging.debug("new_i: " +str(new_i))
             if done_key in done:
                 continue
 
@@ -236,13 +251,14 @@ class Free_Text:
                 done.add(done_key)
 
         # Apparently none of the above was a good enough match...
-
+        logging.debug("No Country match")
         yield None, len(self.split) - 1
 
 
     def _iter_places(self, i, country_id, parent_places=[], postcode=None):
         c = self.db.cursor()
-
+        logging.debug(str(i)+ "INSIDE _iter_places FUNCTION with country_id "+str(country_id)+" and postcode " +str(postcode)+" and parent_places: "+str(parent_places))
+        print()
         if country_id is not None:
             country_sstr = " AND country_id = %(country_id)s"
         else:
@@ -250,9 +266,7 @@ class Free_Text:
 
         for j in range(0, i + 1):
             sub_hash = _hash_list(self.split[j:i + 1])
-            print("Sub_hash " + sub_hash)
-            print("Hash hash " + "".join(self.split) + " hash: " + _hash_wd("".join(self.split)))
-
+            print("Sub_hash " + str(self.split[j:i + 1]) + ": " + sub_hash)
             cache_key = (country_id, sub_hash)
             if self.queryier.place_cache.has_key(cache_key):
                 places = self.queryier.place_cache[cache_key]
@@ -263,6 +277,7 @@ class Free_Text:
                   WHERE name_hash=%(name_hash)s AND place.place_id=place_name.place_id""" + country_sstr,
                     dict(name_hash=sub_hash, country_id=country_id))
                 places = c.fetchall()
+                logging.debug(str(c.rowcount)+" FOUND: ")
                 self.queryier.place_cache[cache_key] = places
 
             for place_id, name, location, sub_country_id, parent_id, population in places:
@@ -358,7 +373,7 @@ class Free_Text:
 
         c = self.db.cursor()
 
-        c.execute("""SELECT parent_id FROM place WHERE id=%(place_id)s""", dict(place_id=place_id))
+        c.execute("""SELECT parent_id FROM place WHERE place_id=%(place_id)s""", dict(place_id=place_id))
         assert c.rowcount == 1
         parent_id = c.fetchone()[0]
         if parent_id is None:
@@ -374,8 +389,11 @@ class Free_Text:
 
 
     def _iter_postcode(self, i, country_id):
+        logging.debug("IN _iter_postcode FUNCTION with country_id "+str(country_id))
         uk_id = self.queryier.get_country_id_from_iso2(self, "GB")
         us_id = self.queryier.get_country_id_from_iso2(self, "US")
+        logging.debug("uk_id "+str(uk_id))
+        logging.debug("us_id "+str(us_id))
 
         if country_id == uk_id or country_id is None:
             for sub_postcode, j in UK.postcode_match(self, i):
@@ -387,31 +405,34 @@ class Free_Text:
 
         c = self.db.cursor()
 
+
         if country_id is not None:
             country_sstr = " AND country_id=%(country_id)s"
         else:
             country_sstr = ""
 
-        c.execute("SELECT * FROM postcode WHERE lower(main)=%(main)s AND sup IS NULL" + country_sstr,
+        logging.debug("Looking for POSTCODES "+str(self.split[i]))
+
+        c.execute("SELECT country_id, main, ST_AsGeoJSON(location) as location, postcode_id FROM postcode WHERE lower(main)=%(main)s AND sup IS NULL" + country_sstr,
             dict(main=self.split[i], country_id=country_id))
+
+        logging.debug("FOUND POSTCODES "+str(c.rowcount))
 
         cols_map = self.queryier.mk_cols_map(c)
         for cnd in c.fetchall():
+            logging.debug("Looking at postcode "+str(cnd))
             if cnd[cols_map["country_id"]] in [uk_id, us_id]:
                 # We search for UK/US postcodes elsewhere.
                 continue
 
-            if cnd[cols_map["area_pp"]] is None:
-                pp = cnd[cols_map["main"]]
-            else:
-                pp = "%s, %s" % (cnd[cols_map["main"]], cnd[cols_map["area_pp"]])
+            pp = cnd[cols_map["main"]]
 
             if country_id is None or country_id != self.host_country_id:
                 pp = "%s, %s" % (pp, self.queryier.country_name_id(self,
                     cnd[cols_map["country_id"]]))
 
-            match = Results.RPost_Code(cnd[cols_map["id"]], cnd[cols_map["country_id"]],
-                cnd[cols_map["lat"]], cnd[cols_map["long"]], pp)
+            match = Results.RPost_Code(cnd[cols_map["postcode_id"]], cnd[cols_map["country_id"]],
+                cnd[cols_map["location"]], pp)
             yield match, i - 1
 
         if country_id is not None and country_id != uk_id:
