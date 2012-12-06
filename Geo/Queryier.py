@@ -106,18 +106,14 @@ class Queryier:
         # Since we have country name data for every language, we can simply pluck the first language
         # from the list.
 
-        #        c.execute("""SELECT name FROM place_name
-        #          WHERE country_id=%(country_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
-        #            dict(country_id=country_id, lang_id=ft.lang_ids[0]))
-
         c.execute("""SELECT place_name.name FROM place_name, place
                   WHERE place.place_id=place_name.place_id AND place.country_id=%(country_id)s AND place_name.lang_id=%(lang_id)s""",
             dict(country_id=country_id, lang_id=ft.lang_ids[0]))
 
         print("Found: "+str(c.rowcount)+" country names")
 
-        #if c.rowcount != 1:
-        #    return None
+        if c.rowcount < 1:
+            return None
 
         name = c.fetchone()[0]
 

@@ -109,7 +109,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
             return None
 
         c = self._db.cursor()
-        c.execute("SELECT id FROM country WHERE iso2=%(iso)s OR iso3=%(iso)s", dict(iso=iso.upper()))
+        c.execute("SELECT country_id FROM country WHERE iso3166_2=%(iso)s OR iso3166_3=%(iso)s", dict(iso=iso.upper()))
         assert c.rowcount < 2
         if c.rowcount == 1:
             return c.fetchone()[0]
@@ -122,7 +122,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         r = self._dom.getElementsByTagName("lang")
         lang_ids = []
         for e in r:
-            iso639_1 = e.childNodes[0].data
+            iso639_1 = str(e.childNodes[0].data).lower() # language ISO is stored as lowercase in DB
             c.execute("SELECT lang_id FROM lang WHERE iso639_1=%(iso639_1)s", dict(iso639_1=iso639_1))
             assert c.rowcount < 2
             if c.rowcount == 0:
@@ -139,6 +139,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         elif _RE_FALSE.match(fa_txt):
             find_all = False
         else:
+            # TODO: How would we ever get here?? (find_all is set in fetegeoc)
             self._error("Unknown value '%s' for find_all attribute." % fa_txt)
 
         ad_txt = self._dom.firstChild.getAttribute("allow_dangling")
@@ -147,6 +148,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         elif _RE_FALSE.match(ad_txt):
             allow_dangling = False
         else:
+            # TODO: How would we ever get here?? (find_all is set in fetegeoc)
             self._error("Unknown value '%s' for allow_dangling attribute." % ad_txt)
 
         lang_ids = self._get_lang_ids()
@@ -168,7 +170,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         qs = self._get_qe("qs")
 
         c = self._db.cursor()
-        c.execute("SELECT id FROM country WHERE iso2=%(qs)s OR iso3=%(qs)s", dict(qs=qs.upper()))
+        c.execute("SELECT country_id FROM country WHERE iso3166_2=%(qs)s OR iso3166_3=%(qs)s", dict(qs=qs.upper()))
         assert c.rowcount < 2
         if c.rowcount == 1:
             cntry_id = c.fetchone()[0]
@@ -177,8 +179,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
             self.request.send("<country></country>")
             return
 
-        c.execute("""SELECT name FROM country_name
-          WHERE country_id=%(cntry_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
+        c.execute("""SELECT name FROM country_name WHERE country_id=%(cntry_id)s AND lang_id=%(lang_id)s""",
             dict(cntry_id=cntry_id, lang_id=lang_ids[0]))
         assert c.rowcount == 1
 

@@ -180,7 +180,6 @@ class Fetegeoc:
         for result in d.firstChild.childNodes:
             if isinstance(result, minidom.Text):
                 continue
-
             dangling = result.getElementsByTagName("dangling")[0]
             place = result.getElementsByTagName("place")
             if len(place) == 0:
@@ -204,6 +203,8 @@ class Fetegeoc:
             i += 1
 
         if i == 0:
+            if d.getElementsByTagName("error"):
+                sys.stderr.write(d.getElementsByTagName("error")[0].firstChild.nodeValue + "\n")
             sys.stderr.write("No match found.\n")
             sys.exit(1)
 
