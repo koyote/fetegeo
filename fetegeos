@@ -196,7 +196,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         if c.rowcount < 1:
             c.execute("""SELECT name FROM country WHERE country_id=%(cntry_id)s""", dict(cntry_id=cntry_id))
 
-        self.request.sendall("<result><country><name>%s</name></country></result>" % c.fetchone()[0])
+        self.request.sendall("<result><country><name>%s</name></country></result>" % c.fetchone()[0].encode("utf-8") )
 
         self.request.close()
 
