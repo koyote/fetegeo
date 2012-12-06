@@ -122,12 +122,15 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         r = self._dom.getElementsByTagName("lang")
         lang_ids = []
         for e in r:
-            iso639_1 = str(e.childNodes[0].data).lower() # language ISO is stored as lowercase in DB
-            c.execute("SELECT lang_id FROM lang WHERE iso639_1=%(iso639_1)s", dict(iso639_1=iso639_1))
-            assert c.rowcount < 2
+            iso639 = e.childNodes[0].data
+            c.execute("SELECT lang_id FROM lang WHERE iso639_1=%(iso639)s OR iso639_2=%(iso639)s", dict(iso639=iso639.upper()))
+
             if c.rowcount == 0:
                 self._error("Unknown language '%s'." % e.childNodes[0].data)
-            lang_ids.append(c.fetchone()[0])
+
+            # Some languages may have more than one ID
+            for i in range(c.rowcount):
+                lang_ids.append(c.fetchone())
 
         return lang_ids
 
@@ -171,17 +174,27 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
 
         c = self._db.cursor()
         c.execute("SELECT country_id FROM country WHERE iso3166_2=%(qs)s OR iso3166_3=%(qs)s", dict(qs=qs.upper()))
-        assert c.rowcount < 2
-        if c.rowcount == 1:
+
+        if c.rowcount > 0:
             cntry_id = c.fetchone()[0]
         else:
             # No match found.
             self.request.send("<country></country>")
             return
 
-        c.execute("""SELECT name FROM country_name WHERE country_id=%(cntry_id)s AND lang_id=%(lang_id)s""",
-            dict(cntry_id=cntry_id, lang_id=lang_ids[0]))
-        assert c.rowcount == 1
+        c.execute("""SELECT type_id FROM type WHERE name=%(type)s""", dict(type="country"))
+        if c.rowcount == 1:
+            type_id = c.fetchone()[0]
+            c.execute("""SELECT place_name.name FROM place,place_name
+                WHERE place.place_id=place_name.place_id
+                AND place.country_id=%(cntry_id)s
+                AND lang_id IN %(lang_id)s
+                AND place.type_id=%(type_id)s""",
+                dict(cntry_id=cntry_id, lang_id=tuple(lang_ids), type_id=type_id))
+
+        # No name found, we'll just use the default english ISO name then
+        if c.rowcount < 1:
+            c.execute("""SELECT name FROM country WHERE country_id=%(cntry_id)s""", dict(cntry_id=cntry_id))
 
         self.request.sendall("<result><country><name>%s</name></country></result>" % c.fetchone()[0])
 

@@ -51,7 +51,7 @@ _LONG_USAGE_MSG = _SHORT_USAGE_MSG + """
      code).
 
   -l Specify the preferred language(s) for results to be returned in.
-     Multiple -l options can be specifed; they will be treated in descending
+     Multiple -l options can be specified; they will be treated in descending
      order of preference.
 """
 
@@ -227,6 +227,11 @@ class Fetegeoc:
                     print()
                 i += 1
                 self._elem_pp(e, 0)
+            if i == 0:
+                if d.getElementsByTagName("error"):
+                    sys.stderr.write(d.getElementsByTagName("error")[0].firstChild.nodeValue + "\n")
+                    sys.stderr.write("No match found.\n")
+                    sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -107,8 +107,8 @@ class Queryier:
         # from the list.
 
         c.execute("""SELECT place_name.name FROM place_name, place
-                  WHERE place.place_id=place_name.place_id AND place.country_id=%(country_id)s AND place_name.lang_id=%(lang_id)s""",
-            dict(country_id=country_id, lang_id=ft.lang_ids[0]))
+                  WHERE place.place_id=place_name.place_id AND place.country_id=%(country_id)s AND place_name.lang_id=%(lang_id)s AND place.type_id=%(type_id)s""",
+            dict(country_id=country_id, lang_id=ft.lang_ids[0]), type_id=self.get_type_id(ft, "country"))
 
         print("Found: "+str(c.rowcount)+" country names")
 
@@ -120,6 +120,14 @@ class Queryier:
         self.country_name_cache[cache_key] = name
 
         return name
+
+    def get_type_id(self, ft, type):
+        c = ft.db.cursor()
+        c.execute("""SELECT type_id FROM type WHERE name=%(type)s""", dict(type=type))
+        if c.rowcount == 1:
+            return c.fetchone()[0]
+        return None
+
 
 
     def name_place_id(self, ft, place_id):
