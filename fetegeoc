@@ -152,7 +152,7 @@ class Fetegeoc:
     def _elem_pp(self, e, indent_level):
         sys.stdout.write("  " * indent_level)
         if len(e.childNodes) > 0:
-            print("%s: %s" % (_TAG_LONG_NAMES[e.tagName], repr(e.childNodes[0].data)[2:-1]))
+            print("%s: %s" % (_TAG_LONG_NAMES[e.tagName], e.childNodes[0].data))
         else:
             print("%s:" % _TAG_LONG_NAMES[e.tagName])
 

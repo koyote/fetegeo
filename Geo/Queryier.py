@@ -103,17 +103,16 @@ class Queryier:
 
         c = ft.db.cursor()
 
-        # Since we have country name data for every language, we can simply pluck the first language
-        # from the list.
-
-        c.execute("""SELECT place_name.name FROM place_name, place
-                  WHERE place.place_id=place_name.place_id AND place.country_id=%(country_id)s AND place_name.lang_id=%(lang_id)s AND place.type_id=%(type_id)s""",
-            dict(country_id=country_id, lang_id=ft.lang_ids[0]), type_id=self.get_type_id(ft, "country"))
-
-        print("Found: "+str(c.rowcount)+" country names")
+        c.execute("""SELECT place_name.name
+                FROM place_name, place
+                WHERE place.place_id=place_name.place_id
+                AND place.country_id=%(country_id)s
+                AND place_name.lang_id IN %(lang_id)s
+                AND place.type_id=%(type_id)s""",
+            dict(country_id=country_id, lang_id=tuple(ft.lang_ids), type_id=self.get_type_id(ft, "country")))
 
         if c.rowcount < 1:
-            return None
+            c.execute("""SELECT name FROM country WHERE country_id=%(country_id)s""", dict(country_id=country_id))
 
         name = c.fetchone()[0]
 
@@ -127,7 +126,6 @@ class Queryier:
         if c.rowcount == 1:
             return c.fetchone()[0]
         return None
-
 
 
     def name_place_id(self, ft, place_id):
@@ -151,12 +149,12 @@ class Queryier:
                 self.place_name_cache[cache_key] = name
                 return name
 
-        # We couldn't find anything in the required languages.
+                # We couldn't find anything in the required languages.
 
-            #        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s AND is_official=TRUE",
-            #            dict(place_id=place_id))
-            #
-            #        if c.rowcount == 0:
+                #        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s AND is_official=TRUE",
+                #            dict(place_id=place_id))
+                #
+                #        if c.rowcount == 0:
         c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s",
             dict(place_id=place_id))
 
@@ -183,10 +181,9 @@ class Queryier:
             TYPE_COUNTY = '0'
         c.execute("SELECT type_id FROM type WHERE name=%(state)s", dict(state='state'))
         if c.rowcount == 1:
-            TYPE_STATE = c.fetchone()[0] 
+            TYPE_STATE = c.fetchone()[0]
         else:
             TYPE_STATE = '0'
-
 
         c.execute("SELECT parent_id, country_id, type_id from place WHERE place_id=%(id)s", dict(id=place_id))
         assert c.rowcount == 1
@@ -200,13 +197,11 @@ class Queryier:
             format = _DEFAULT_FORMAT
 
         while parent_id is not None:
-
             c.execute("""SELECT parent_id, type_id from place WHERE place_id=%(id)s""", dict(id=parent_id))
             new_parent_id, type = c.fetchone()
 
             #if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
             pp = "%s, %s" % (pp, self.name_place_id(ft, parent_id))
-            print(str(parent_id)+" ParentID NAME: "+str(self.name_place_id(ft, parent_id)))
             parent_id = new_parent_id
 
         if country_id != ft.host_country_id:

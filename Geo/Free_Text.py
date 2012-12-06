@@ -272,9 +272,10 @@ class Free_Text:
                 places = self.queryier.place_cache[cache_key]
             else:
                 c.execute("""SELECT DISTINCT ON (place.place_id, place_name.name)
-                  place.place_id, place_name.name, ST_AsGeoJSON(place.location) as location, place.country_id, place.parent_id, place.population
+                  place.place_id, place_name.name, ST_AsGeoJSON(ST_Centroid(place.location)) as location, place.country_id, place.parent_id, place.population
                   FROM place, place_name
-                  WHERE place_name.name_hash=%(name_hash)s AND place.place_id=place_name.place_id""" + country_sstr,
+                  WHERE place_name.name_hash=%(name_hash)s
+                  AND place.place_id=place_name.place_id""" + country_sstr,
                     dict(name_hash=sub_hash, country_id=country_id))
                 places = c.fetchall()
                 logging.debug(str(c.rowcount)+" FOUND PLACE")
@@ -417,7 +418,7 @@ class Free_Text:
 
         logging.debug("Looking for POSTCODES "+str(self.split[i]))
 
-        c.execute("SELECT country_id, main, ST_AsGeoJSON(location) as location, postcode_id FROM postcode WHERE lower(main)=%(main)s AND sup IS NULL" + country_sstr,
+        c.execute("SELECT country_id, main, ST_AsGeoJSON(ST_Centroid(location)) as location, postcode_id FROM postcode WHERE lower(main)=%(main)s AND sup IS NULL" + country_sstr,
             dict(main=self.split[i], country_id=country_id))
 
         logging.debug("FOUND POSTCODES "+str(c.rowcount))
