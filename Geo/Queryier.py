@@ -135,28 +135,17 @@ class Queryier:
 
         c = ft.db.cursor()
 
-        for lang_id in ft.lang_ids:
-        #            c.execute("""SELECT name FROM place_name
-        #              WHERE place_id=%(place_id)s AND lang_id=%(lang_id)s AND is_official=TRUE""",
-        #                dict(place_id=place_id, lang_id=lang_id))
-        #
-        #            if c.rowcount == 0:
-            c.execute("""SELECT name FROM place_name WHERE place_id=%(place_id)s AND lang_id=%(lang_id)s""",
-                dict(place_id=place_id, lang_id=lang_id))
+        c.execute("""SELECT name FROM place_name WHERE place_id=%(place_id)s AND lang_id IN %(lang_id)s""",
+            dict(place_id=place_id, lang_id=tuple(ft.lang_ids)))
 
-            if c.rowcount > 0:
-                name = c.fetchone()[0]
-                self.place_name_cache[cache_key] = name
-                return name
+        if c.rowcount > 0:
+            name = c.fetchone()[0]
+            self.place_name_cache[cache_key] = name
+            return name
 
-                # We couldn't find anything in the required languages.
+        # We couldn't find anything in the required languages.
 
-                #        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s AND is_official=TRUE",
-                #            dict(place_id=place_id))
-                #
-                #        if c.rowcount == 0:
-        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s",
-            dict(place_id=place_id))
+        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s", dict(place_id=place_id))
 
         name = c.fetchone()[0]
         self.place_name_cache[cache_key] = name
@@ -174,16 +163,6 @@ class Queryier:
         pp = self.name_place_id(ft, place_id)
 
         # TODO: Maybe save admin_level and parse that?
-        c.execute("SELECT type_id FROM type WHERE name=%(county)s", dict(county='county'))
-        if c.rowcount == 1:
-            TYPE_COUNTY = c.fetchone()[0]
-        else:
-            TYPE_COUNTY = '0'
-        c.execute("SELECT type_id FROM type WHERE name=%(state)s", dict(state='state'))
-        if c.rowcount == 1:
-            TYPE_STATE = c.fetchone()[0]
-        else:
-            TYPE_STATE = '0'
 
         c.execute("SELECT parent_id, country_id, type_id from place WHERE place_id=%(id)s", dict(id=place_id))
         assert c.rowcount == 1
