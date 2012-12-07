@@ -24,7 +24,7 @@
 import getopt, socket, sys, xml.dom.minidom as minidom
 
 
-_VERSION = "0.1"
+_VERSION = "0.2"
 
 _DEFAULT_HOST = "127.0.0.1"
 _DEFAULT_PORT = 8263

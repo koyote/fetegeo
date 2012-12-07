@@ -41,7 +41,7 @@ class Free_Text:
         self.qs = _cleanup(qs)
         self.split, self.split_indices = _split(self.qs)
         self.host_country_id = host_country_id
-        self.country_type_id = self.queryier.get_type_id(self, "country")
+        self.country_type_id = self.queryier.get_type_id(self.db, "country")
 
         logging.debug("Inside name_to_lat_long with: " + qs)
 

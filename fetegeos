@@ -110,8 +110,8 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
 
         c = self._db.cursor()
         c.execute("SELECT country_id FROM country WHERE iso3166_2=%(iso)s OR iso3166_3=%(iso)s", dict(iso=iso.upper()))
-        assert c.rowcount < 2
-        if c.rowcount == 1:
+
+        if c.rowcount > 0:
             return c.fetchone()[0]
 
         return None
@@ -129,7 +129,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
                 self._error("Unknown language '%s'." % e.childNodes[0].data)
 
             # Some languages may have more than one ID
-            for i in range(c.rowcount):
+            for _ in range(c.rowcount):
                 lang_ids.append(c.fetchone())
 
         return lang_ids
@@ -142,7 +142,6 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         elif _RE_FALSE.match(fa_txt):
             find_all = False
         else:
-            # TODO: How would we ever get here?? (find_all is set in fetegeoc)
             self._error("Unknown value '%s' for find_all attribute." % fa_txt)
 
         ad_txt = self._dom.firstChild.getAttribute("allow_dangling")
@@ -151,7 +150,6 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         elif _RE_FALSE.match(ad_txt):
             allow_dangling = False
         else:
-            # TODO: How would we ever get here?? (find_all is set in fetegeoc)
             self._error("Unknown value '%s' for allow_dangling attribute." % ad_txt)
 
         lang_ids = self._get_lang_ids()
@@ -159,8 +157,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         country_id = self._get_country_id(country_iso)
 
         qs = self._get_qe("qs")
-        results = self.server.queryier.name_to_lat_long(self._db, lang_ids, find_all,
-            allow_dangling, qs, country_id)
+        results = self.server.queryier.name_to_lat_long(self._db, lang_ids, find_all, allow_dangling, qs, country_id)
 
         self.request.sendall("<results>\n%s\n</results>" % "\n".join([x.to_xml().encode("utf-8") for x in results]))
 
@@ -182,9 +179,9 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
             self.request.send("<country></country>")
             return
 
-        c.execute("""SELECT type_id FROM type WHERE name=%(type)s""", dict(type="country"))
-        if c.rowcount == 1:
-            type_id = c.fetchone()[0]
+        # Try and find name in correct language
+        type_id = self.server.queryier.get_type_id(self._db, "country")
+        if type_id:
             c.execute("""SELECT place_name.name FROM place,place_name
                 WHERE place.place_id=place_name.place_id
                 AND place.country_id=%(cntry_id)s
@@ -224,18 +221,16 @@ class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
 
         # Setup the server
 
-        self.allow_reuse_address = True # XXX
+        self.allow_reuse_address = True
         SocketServer.TCPServer.__init__(self, addr, rhc)
 
         self.queryier = Geo.Queryier.Queryier()
 
         if dbmod.threadsafety == 2 or dbmod.threadsafety == 3:
             # Connections can be shared between threads safely so we connect only once.
-            self.db = dbmod.connect(user="koy", database="osm")
-            try:
+            self.db = dbmod.connect(user=self._config.user, database=self._config.database)
+            if hasattr(self.db, "set_client_encoding"):
                 self.db.set_client_encoding('utf-8')
-            except:
-                pass
 
 
     def verify_request(self, request, client_address):

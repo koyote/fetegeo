@@ -109,7 +109,7 @@ class Queryier:
                 AND place.country_id=%(country_id)s
                 AND place_name.lang_id IN %(lang_id)s
                 AND place.type_id=%(type_id)s""",
-            dict(country_id=country_id, lang_id=tuple(ft.lang_ids), type_id=self.get_type_id(ft, "country")))
+            dict(country_id=country_id, lang_id=tuple(ft.lang_ids), type_id=self.get_type_id(ft.db, "country")))
 
         if c.rowcount < 1:
             c.execute("""SELECT name FROM country WHERE country_id=%(country_id)s""", dict(country_id=country_id))
@@ -120,8 +120,8 @@ class Queryier:
 
         return name
 
-    def get_type_id(self, ft, type):
-        c = ft.db.cursor()
+    def get_type_id(self, db, type):
+        c = db.cursor()
         c.execute("""SELECT type_id FROM type WHERE name=%(type)s""", dict(type=type))
         if c.rowcount == 1:
             return c.fetchone()[0]
