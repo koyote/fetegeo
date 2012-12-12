@@ -104,18 +104,15 @@ class Free_Text:
         results = self._matches[self._longest_match]
 
         if self.host_country_id is not None and not self.find_all:
-            for r in results:
-                if r.country_id == self.host_country_id:
-                    # If we're only trying to find matches within a given country, then remove any
-                    # matches that come from other countries. This may seem inefficient, but it's
-                    # easier than having this logic every bit of code that adds matches.
-                    i = 0
-                    while i < len(results):
-                        if results[i].country_id != self.host_country_id:
-                            del results[i]
-                        else:
-                            i += 1
-                    break
+            # If we're only trying to find matches within a given country, then remove any
+            # matches that come from other countries. This may seem inefficient, but it's
+            # easier than having this logic every bit of code that adds matches.
+            i = 0
+            while i < len(results):
+                if results[i].country_id != self.host_country_id:
+                    del results[i]
+                else:
+                    i += 1
 
         # Sort the results into alphabetical order.
         results.sort(key=lambda x: x.pp)
