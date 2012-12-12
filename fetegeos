@@ -64,7 +64,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
 
 
     def _error(self, msg):
-        self.request.send(bytes("<error>%s</error>" % msg, 'UTF-8'))
+        self.request.send(bytes("<error>{0:>s}</error>".format(msg), 'UTF-8'))
         self.request.close()
         # We now kill this thread only. TODO: is there a better way of doing this without raising an exception?
         sys.exit(0)
@@ -87,7 +87,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         elif q_type == "countryquery":
             self._q_ctry()
         else:
-            self._error("Unknown query type '%s'." % q_type)
+            self._error("Unknown query type '{0:>s}'.".format(q_type))
             return
 
 
@@ -124,7 +124,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
             c.execute("SELECT lang_id FROM lang WHERE iso639_1=%(iso639)s OR iso639_2=%(iso639)s", dict(iso639=iso639.upper()))
 
             if c.rowcount == 0:
-                self._error("Unknown language '%s'." % e.childNodes[0].data)
+                self._error("Unknown language '{0:>s}'.".format(e.childNodes[0].data))
 
             # Some languages may have more than one ID
             for _ in range(c.rowcount):
@@ -140,7 +140,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         elif _RE_FALSE.match(fa_txt):
             find_all = False
         else:
-            self._error("Unknown value '%s' for find_all attribute." % fa_txt)
+            self._error("Unknown value '{0:>s}' for find_all attribute.".format(fa_txt))
 
         ad_txt = self._dom.firstChild.getAttribute("allow_dangling")
         if _RE_TRUE.match(ad_txt):
@@ -148,7 +148,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         elif _RE_FALSE.match(ad_txt):
             allow_dangling = False
         else:
-            self._error("Unknown value '%s' for allow_dangling attribute." % ad_txt)
+            self._error("Unknown value '{0:>s}' for allow_dangling attribute.".format(ad_txt))
 
         lang_ids = self._get_lang_ids()
         country_iso = self._get_qe("country")
@@ -157,7 +157,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         qs = self._get_qe("qs")
         results = self.server.queryier.name_to_lat_long(self._db, lang_ids, find_all, allow_dangling, qs, country_id)
 
-        self.request.sendall(bytes("<results>\n%s\n</results>" % "\n".join([x.to_xml() for x in results]), 'UTF-8'))
+        self.request.sendall(bytes("<results>\n{0:>s}\n</results>".format("\n".join([x.to_xml() for x in results])), 'UTF-8'))
 
         self.request.close()
 
@@ -191,7 +191,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         if c.rowcount < 1:
             c.execute("""SELECT name FROM country WHERE country_id=%(cntry_id)s""", dict(cntry_id=cntry_id))
 
-        self.request.sendall(bytes("<result><country><name>%s</name></country></result>" % c.fetchone()[0], 'UTF-8'))
+        self.request.sendall(bytes("<result><country><name>{0:>s}</name></country></result>".format(c.fetchone()[0]), 'UTF-8'))
 
         self.request.close()
 

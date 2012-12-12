@@ -181,11 +181,11 @@ class Queryier:
             new_parent_id, type = c.fetchone()
 
             #if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
-            pp = "%s, %s" % (pp, self.name_place_id(ft, parent_id))
+            pp = "{0:>s}, {1:>s}".format(pp, self.name_place_id(ft, parent_id))
             parent_id = new_parent_id
 
         if country_id != ft.host_country_id:
-            pp = "%s, %s" % (pp, self.country_name_id(ft, country_id))
+            pp = "{0:>s}, {1:>s}".format(pp, self.country_name_id(ft, country_id))
 
         self.place_pp_cache[cache_key] = pp
 

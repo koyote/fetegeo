@@ -143,7 +143,7 @@ def mk_pp(ft, pp):
     if ft.host_country_id == uk_id:
         return pp
 
-    return "%s, %s" % (pp, ft.queryier.country_name_id(ft, uk_id))
+    return "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, uk_id))
 
 
 def pp_place_id(ft, place_id):
@@ -158,6 +158,6 @@ def pp_place_id(ft, place_id):
     parent_id = c.fetchone()[0]
 
     if parent_id is not None:
-        pp = "%s, %s" % (pp, ft.queryier.name_place_id(ft, parent_id))
+        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.name_place_id(ft, parent_id))
 
     return mk_pp(ft, pp)

@@ -48,10 +48,10 @@ def _sub_pc_match(ft, i):
         if cnd[cols_map["area_pp"]] is None:
             pp = cnd[cols_map["main"]]
         else:
-            pp = "%s, %s" % (cnd[cols_map["main"]], cnd[cols_map["area_pp"]])
+            pp = "{0:>s}, {1:>s}".format(cnd[cols_map["main"]], cnd[cols_map["area_pp"]])
 
         if us_id != ft.host_country_id:
-            pp = "%s, %s" % (pp, ft.queryier.country_name_id(ft, cnd[cols_map["country_id"]]))
+            pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, cnd[cols_map["country_id"]]))
 
         match = Results.RPost_Code(cnd[cols_map["id"]], cnd[cols_map["country_id"]],
             cnd[cols_map["lat"]], cnd[cols_map["long"]], pp)
@@ -68,7 +68,7 @@ def mk_pp(ft, pp):
     if ft.host_country_id == us_id:
         return pp
 
-    return "%s, %s" % (pp, ft.queryier.country_name_id(ft, us_id))
+    return "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, us_id))
 
 
 def pp_place_id(ft, place_id):
@@ -85,7 +85,7 @@ def pp_place_id(ft, place_id):
         parent_id = c.fetchone()[0]
 
         if parent_id is None:
-            pp = "%s, %s" % (pp, ft.queryier.name_place_id(ft, cnd_id))
+            pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.name_place_id(ft, cnd_id))
             return mk_pp(ft, pp)
 
         cnd_id = parent_id

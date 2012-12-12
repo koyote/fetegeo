@@ -37,23 +37,23 @@ _TAG_LONG_NAMES = {"dangling": "Dangling text", "place": "Place", "id": "ID", "n
                    "location": "Location", "country_id": "Country ID", "parent_id": "Parent ID",
                    "population": "Population", "pp": "PP"}
 
-_SHORT_USAGE_MSG = """Usage:
-  * fetegeoc [-l <lang>] [-s <host>] [-p <port>] country <query string>
-  * fetegeoc [-a] [-c <country>] [-s <host>] [-p <port>] [-l <lang>]
-    geo <query string>
-"""
+_SHORT_USAGE_MSG = ("Usage:\n"
+                    "  * fetegeoc [-l <lang>] [-s <host>] [-p <port>] country <query string>\n"
+                    "  * fetegeoc [-a] [-c <country>] [-s <host>] [-p <port>] [-l <lang>]\n"
+                    "    geo <query string>\n"
+    )
 
-_LONG_USAGE_MSG = _SHORT_USAGE_MSG + """
-  -a If -c is specified, find all matches, not just those in the host
-     country.
-
-  -c Bias the search to the specified country (specified as an ISO2 or ISO3
-     code).
-
-  -l Specify the preferred language(s) for results to be returned in.
-     Multiple -l options can be specified; they will be treated in descending
-     order of preference.
-"""
+_LONG_USAGE_MSG = _SHORT_USAGE_MSG + ("\n"
+                                      "  -a If -c is specified, find all matches, not just those in the host\n"
+                                      "     country.\n"
+                                      "\n"
+                                      "  -c Bias the search to the specified country (specified as an ISO2 or ISO3\n"
+                                      "     code).\n"
+                                      "\n"
+                                      "  -l Specify the preferred language(s) for results to be returned in.\n"
+                                      "     Multiple -l options can be specified; they will be treated in descending\n"
+                                      "     order of preference.\n"
+    )
 
 
 class Fetegeoc:
@@ -129,7 +129,7 @@ class Fetegeoc:
 
     def _usage(self, error_msg="", code=0, long_help=False):
         if error_msg != "":
-            sys.stderr.write("Error: %s\n" % error_msg)
+            sys.stderr.write("Error: {0:>s}\n".format(error_msg))
 
         if long_help:
             sys.stderr.write(_LONG_USAGE_MSG)
@@ -152,26 +152,28 @@ class Fetegeoc:
     def _elem_pp(self, e, indent_level):
         sys.stdout.write("  " * indent_level)
         if len(e.childNodes) > 0:
-            print("%s: %s" % (_TAG_LONG_NAMES[e.tagName], e.childNodes[0].data))
+            print("{0:>s}: {1:>s}".format(_TAG_LONG_NAMES[e.tagName], e.childNodes[0].data))
         else:
-            print("%s:" % _TAG_LONG_NAMES[e.tagName])
+            print("{0:>s}:".format(_TAG_LONG_NAMES[e.tagName]))
 
 
     def _q_geo(self):
         fa_txt = str(self._find_all).lower()
         ad_txt = str(self._allow_dangling).lower()
 
-        langs = "\n".join(["<lang>%s</lang>" % x for x in self._langs])
+        langs = "\n".join(["<lang>{0:>s}</lang>".format(x) for x in self._langs])
         country = ""
 
         if self._country is not None:
-            country = "<country>%s</country>\n" % self._country
+            country = "<country>{0:>s}</country>\n".format(self._country)
 
-        self._sock.sendall(bytes("""
-        <geoquery version="1" find_all="%s" allow_dangling="%s">
-        %s%s
-        <qs>%s</qs>
-        </geoquery>""" % (fa_txt, ad_txt, langs, country, self._q_str), 'UTF-8'))
+
+
+        self._sock.sendall(bytes(("<geoquery version='1' find_all='{0:>s}' allow_dangling='{1:>s}'>"
+                                  "{2:>s}{3:>s}"
+                                  "<qs>{4:>s}</qs>"
+                                  "</geoquery>"
+            ).format(fa_txt, ad_txt, langs, country, self._q_str), 'UTF-8'))
 
         d = minidom.parseString(self._pump_sock())
 
@@ -209,11 +211,12 @@ class Fetegeoc:
 
 
     def _q_ctry(self):
-        langs = "\n".join(["<lang>%s</lang>" % x for x in self._langs])
-        self._sock.sendall(bytes("""<countryquery version="1">
-        %s
-        <qs>%s</qs>
-        </countryquery>""" % (langs, self._q_str), 'UTF-8'))
+        langs = "\n".join(["<lang>{0:>s}</lang>".format(x) for x in self._langs])
+        self._sock.sendall(bytes(("<countryquery  version='1'>"
+                                  "{0:>s}"
+                                  "<qs>{1:>s}</qs>"
+                                  "</countryquery>"
+            ).format(langs, self._q_str), 'UTF-8'))
 
         d = minidom.parseString(self._pump_sock())
         if len(d.firstChild.childNodes) == 0:
@@ -228,9 +231,9 @@ class Fetegeoc:
                 self._elem_pp(e, 0)
             if i == 0:
                 if d.getElementsByTagName("error"):
-                    sys.stderr.write(d.getElementsByTagName("error")[0].firstChild.nodeValue + "\n")
-                    sys.stderr.write("No match found.\n")
-                    sys.exit(1)
+                    sys.stderr.write("{0:>s}\n".format(d.getElementsByTagName("error")[0].firstChild.nodeValue))
+                sys.stderr.write("No match found.\n")
+                sys.exit(1)
 
 
 if __name__ == "__main__":
