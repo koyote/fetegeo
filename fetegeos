@@ -56,11 +56,9 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         else:
             # Connections can't be shared between threads safely, so for every thread we have to
             # make a new connection.
-            self._db = dbmod.connect(user="koy", database="osm")
-            try:
-                self.db.set_client_encoding('utf-8')
-            except:
-                pass
+            self._db = dbmod.connect(user=server._config.user, database=server._config.database)
+            if hasattr(self._db, "set_client_encoding"):
+                self._db.set_client_encoding('utf-8')
 
         socketserver.BaseRequestHandler.__init__(self, req, client_addr, server)
 
@@ -89,7 +87,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         elif q_type == "countryquery":
             self._q_ctry()
         else:
-            self._error("Unknown query type '%s'." % n.tagName)
+            self._error("Unknown query type '%s'." % q_type)
             return
 
 

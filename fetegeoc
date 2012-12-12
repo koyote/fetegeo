@@ -63,8 +63,8 @@ class Fetegeoc:
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self._sock.connect((self._host, self._port))
-        except socket.error as e:
-            sys.stderr.write("Error: %s.\n" % e[1])
+        except Exception as e:
+            sys.stderr.write("Error: %s.\n" % e)
             sys.exit(1)
 
         if self._q_type == _Q_GEO:
