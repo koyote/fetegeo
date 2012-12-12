@@ -19,9 +19,7 @@
 # IN THE SOFTWARE.
 
 
-import Free_Text, Temp_Cache
-import UK, US
-
+from . import Free_Text, Temp_Cache
 
 TYPE_STATE = 0
 TYPE_COUNTY = 1
@@ -63,7 +61,7 @@ class Queryier:
         map = {}
         i = 0
         for col in c.description:
-            assert not map.has_key(col[0])
+            assert col[0] not in map
             map[col[0]] = i
             i += 1
 
@@ -74,7 +72,7 @@ class Queryier:
         if not iso2:
             return None
 
-        if not self.country_id_iso2_cache.has_key(iso2):
+        if iso2 not in self.country_id_iso2_cache:
             c = ft.db.cursor()
             c.execute("SELECT country_id FROM country WHERE iso3166_2=%(iso2)s", dict(iso2=iso2))
             assert c.rowcount == 1
@@ -87,7 +85,7 @@ class Queryier:
         if not country_id:
             return None
 
-        if not self.country_iso2_id_cache.has_key(country_id):
+        if country_id not in self.country_iso2_id_cache:
             c = ft.db.cursor()
             c.execute("SELECT iso3166_2 FROM country WHERE country_id=%(id)s", dict(id=country_id))
             assert c.rowcount == 1
@@ -97,8 +95,11 @@ class Queryier:
 
 
     def country_name_id(self, ft, country_id):
+        if not country_id:
+            return None
+
         cache_key = (ft.lang_ids[0], country_id)
-        if self.country_name_cache.has_key(cache_key):
+        if cache_key in self.country_name_cache:
             return self.country_name_cache[cache_key]
 
         c = ft.db.cursor()

@@ -20,7 +20,7 @@
 
 
 import re
-import Results
+from . import Results
 
 
 _RE_US_ZIP_PLUS4 = re.compile("[0-9]{4}")

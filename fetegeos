@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 
 # Copyright (C) 2008 Laurence Tratt http://tratt.net/laurie/
 #
@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 
 
-import imp, re, os, SocketServer, sys, xml.dom.minidom as minidom
+import imp, re, os, socketserver, sys, xml.dom.minidom as minidom
 
 try:
     import psycopg2 as dbmod
@@ -40,7 +40,7 @@ _DEFAULT_PORT = 8263
 _CONF_DIRS = ["/etc/", sys.path[0]]
 _CONF_LEAF = "fetegeos.conf"
 
-_RE_QUERY_END = re.compile("</(?:geo|country)query>")
+_RE_QUERY_END = re.compile(b"</(?:geo|country)query>")
 
 _RE_TRUE = re.compile("true")
 _RE_FALSE = re.compile("false")
@@ -48,7 +48,7 @@ _RE_FALSE = re.compile("false")
 _SOCK_BUF = 1024
 
 
-class Fetegeos_Handler(SocketServer.BaseRequestHandler):
+class Fetegeos_Handler(socketserver.BaseRequestHandler):
     def __init__(self, req, client_addr, server):
         if dbmod.threadsafety == 2 or dbmod.threadsafety == 3:
             # Connections can be shared between threads safely, so reuse the main server connection.
@@ -62,18 +62,18 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
             except:
                 pass
 
-        SocketServer.BaseRequestHandler.__init__(self, req, client_addr, server)
+        socketserver.BaseRequestHandler.__init__(self, req, client_addr, server)
 
 
     def _error(self, msg):
-        self.request.send("<error>%s</error>" % msg)
+        self.request.send(bytes("<error>%s</error>" % msg, 'UTF-8'))
         self.request.close()
-        # We now kill this thread only.
+        # We now kill this thread only. TODO: is there a better way of doing this without raising an exception?
         sys.exit(0)
 
 
     def handle(self):
-        buf = ""
+        buf = b""
         while True:
             data = self.request.recv(_SOCK_BUF)
             buf += data
@@ -159,7 +159,7 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         qs = self._get_qe("qs")
         results = self.server.queryier.name_to_lat_long(self._db, lang_ids, find_all, allow_dangling, qs, country_id)
 
-        self.request.sendall("<results>\n%s\n</results>" % "\n".join([x.to_xml().encode("utf-8") for x in results]))
+        self.request.sendall(bytes("<results>\n%s\n</results>" % "\n".join([x.to_xml() for x in results]), 'UTF-8'))
 
         self.request.close()
 
@@ -193,12 +193,12 @@ class Fetegeos_Handler(SocketServer.BaseRequestHandler):
         if c.rowcount < 1:
             c.execute("""SELECT name FROM country WHERE country_id=%(cntry_id)s""", dict(cntry_id=cntry_id))
 
-        self.request.sendall("<result><country><name>%s</name></country></result>" % c.fetchone()[0].encode("utf-8") )
+        self.request.sendall(bytes("<result><country><name>%s</name></country></result>" % c.fetchone()[0], 'UTF-8'))
 
         self.request.close()
 
 
-class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
+class Fetegeos_Server(socketserver.TCPServer, socketserver.ThreadingMixIn):
     def __init__(self, addr, rhc):
         # Load the config file
 
@@ -222,7 +222,7 @@ class Fetegeos_Server(SocketServer.TCPServer, SocketServer.ThreadingMixIn):
         # Setup the server
 
         self.allow_reuse_address = True
-        SocketServer.TCPServer.__init__(self, addr, rhc)
+        socketserver.TCPServer.__init__(self, addr, rhc)
 
         self.queryier = Geo.Queryier.Queryier()
 

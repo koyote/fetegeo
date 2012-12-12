@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 
 # Copyright (C) 2008 Laurence Tratt http://tratt.net/laurie/
 #
@@ -146,7 +146,7 @@ class Fetegeoc:
                 break
             buf.append(s)
 
-        return "".join(buf)
+        return "".join(b.decode('utf-8') for b in buf)
 
 
     def _elem_pp(self, e, indent_level):
@@ -167,14 +167,13 @@ class Fetegeoc:
         if self._country is not None:
             country = "<country>%s</country>\n" % self._country
 
-        self._sock.sendall("""
+        self._sock.sendall(bytes("""
         <geoquery version="1" find_all="%s" allow_dangling="%s">
         %s%s
         <qs>%s</qs>
-        </geoquery>""" % (fa_txt, ad_txt, langs, country, self._q_str))
+        </geoquery>""" % (fa_txt, ad_txt, langs, country, self._q_str), 'UTF-8'))
 
-        buf = self._pump_sock()
-        d = minidom.parseString(buf)
+        d = minidom.parseString(self._pump_sock())
 
         i = 0
         for result in d.firstChild.childNodes:
@@ -211,10 +210,10 @@ class Fetegeoc:
 
     def _q_ctry(self):
         langs = "\n".join(["<lang>%s</lang>" % x for x in self._langs])
-        self._sock.sendall("""<countryquery version="1">
+        self._sock.sendall(bytes("""<countryquery version="1">
         %s
         <qs>%s</qs>
-        </countryquery>""" % (langs, self._q_str))
+        </countryquery>""" % (langs, self._q_str), 'UTF-8'))
 
         d = minidom.parseString(self._pump_sock())
         if len(d.firstChild.childNodes) == 0:

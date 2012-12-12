@@ -26,7 +26,7 @@ class Result:
 
 
     def to_xml(self):
-        return u"""<result>
+        return """<result>
 %s
 <dangling>%s</dangling>
 </result>""" % (self.ri.to_xml(), self.dangling)
@@ -40,7 +40,7 @@ class RCountry:
 
 
     def to_xml(self):
-        return u"""<country>
+        return """<country>
 <id>%s</id>
 <name>%s</name>
 <pp>%s</pp>
@@ -75,13 +75,12 @@ class RPlace:
         else:
             population_txt = ""
 
-        return u"""<place>
+        return """<place>
 <id>%d</id>
 <name>%s</name>%s
 <country_id>%s</country_id>%s%s
 <pp>%s</pp>
-</place>""" % (self.id, self.name, location_txt, self.country_id,
-               parent_id_txt, population_txt, self.pp)
+</place>""" % (self.id, self.name, location_txt, self.country_id, parent_id_txt, population_txt, self.pp)
 
 
 class RPost_Code:
@@ -94,7 +93,7 @@ class RPost_Code:
 
 
     def to_xml(self):
-        return u"""<postcode>
+        return """<postcode>
 <id>%d</id>
 <country_id>%s</country_id>
 <location>%s</location>

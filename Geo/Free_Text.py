@@ -18,8 +18,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import re, hashlib, logging
-import Results, UK, US
+import re, hashlib
+from . import Results, UK, US
 
 
 _RE_SPLIT = re.compile("[ ,-/]")
@@ -27,8 +27,6 @@ _RE_SPLIT = re.compile("[ ,-/]")
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
 _RE_SQUASH_SPACES = re.compile(" +")
 _RE_SPLIT = re.compile("[ ,-/]")
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 class Free_Text:
@@ -42,8 +40,6 @@ class Free_Text:
         self.split, self.split_indices = _split(self.qs)
         self.host_country_id = host_country_id
         self.country_type_id = self.queryier.get_type_id(self.db, "country")
-
-        logging.debug("Inside name_to_lat_long with: " + qs)
 
         results_cache_key = (tuple(lang_ids), find_all, allow_dangling, self.qs, host_country_id)
         if queryier.results_cache.has_key(results_cache_key):
@@ -73,7 +69,6 @@ class Free_Text:
         # administrative units have spaces in them.
 
         for country_id, i in self._iter_country():
-            logging.debug("Inside _iter_country forloop with: " + str(country_id) + " and i: " + str(i))
             if i == -1:
                 # geonames doesn't have lat / long data for countries directly, but includes them as
                 # places in the country file. Which is the worst of all possible worlds
@@ -85,9 +80,6 @@ class Free_Text:
                 continue
 
             for parent_places, postcode, j in self._iter_places(i, country_id):
-                logging.debug(
-                    "Inside _iter_places forloop with: parent_places " + str(parent_places) + " postcode " + str(
-                        postcode))
                 if postcode is not None and j + 1 <= self._longest_match:
                     done_key = (postcode.id, j)
                     if done_key in self._matched_postcodes:
@@ -126,8 +118,7 @@ class Free_Text:
                     break
 
         # Sort the results into alphabetical order.
-
-        results.sort(lambda x, y: cmp(x.pp, y.pp))
+        results.sort(key=lambda x: x.pp)
 
         # Now we try to find the best match.
 
@@ -143,8 +134,11 @@ class Free_Text:
                         best_i = i
                     elif isinstance(results[best_i], Results.RPlace) and\
                          isinstance(results[i], Results.RPlace):
-                        if results[best_i].population < results[i].population:
+                        if not results[best_i].population and results[i].population:
                             best_i = i
+                        elif results[best_i].population and results[i].population:
+                            if results[best_i].population < results[i].population:
+                                best_i = i
                     elif isinstance(results[best_i], Results.RPost_Code) and\
                          isinstance(results[i], Results.RPlace):
                         best_i = i
@@ -166,8 +160,11 @@ class Free_Text:
                     best_i = i
                 elif isinstance(results[best_i], Results.RPlace) and\
                      isinstance(results[i], Results.RPlace):
-                    if results[best_i].population < results[i].population:
+                    if not results[best_i].population and results[i].population:
                         best_i = i
+                    elif results[best_i].population and results[i].population:
+                        if results[best_i].population < results[i].population:
+                            best_i = i
                 elif isinstance(results[best_i], Results.RPost_Code) and\
                      isinstance(results[i], Results.RPlace):
                     best_i = i
@@ -193,7 +190,6 @@ class Free_Text:
 
 
     def _iter_country(self):
-        logging.debug("Inside _iter_country FUNCTION for: " + self.split[-1])
 
         if self.host_country_id is not None:
             # First of all, we try and do the search as if we're in the host country. This is to
@@ -218,7 +214,6 @@ class Free_Text:
             if c.rowcount > 0:
                 assert c.rowcount == 1
                 country_id = c.fetchone()[0]
-                logging.debug("Found ID: " + str(country_id))
                 yield country_id, len(self.split) - 2
 
 
@@ -233,17 +228,12 @@ class Free_Text:
                 dict(type_id=self.country_type_id, name_lwdh=_hash_wd(self.split[-1])))
         cols_map = self.queryier.mk_cols_map(c)
 
-        logging.debug("Columns: " + ", ".join(cols_map))
-        logging.debug("Rows: " + str(c.rowcount))
-
         done = set()
         for cnd in c.fetchall():
             new_i = _match_end_split(self.split, len(self.split) - 1, cnd[cols_map["name"]])
 
             country_id = cnd[cols_map["country_id"]]
             done_key = (country_id, new_i)
-            logging.debug("Results: " + str(cnd))
-            logging.debug("new_i: " + str(new_i))
             if done_key in done:
                 continue
 
@@ -252,15 +242,12 @@ class Free_Text:
                 done.add(done_key)
 
         # Apparently none of the above was a good enough match...
-        logging.debug("No Country match")
         yield None, len(self.split) - 1
 
 
     def _iter_places(self, i, country_id, parent_places=[], postcode=None):
         c = self.db.cursor()
-        logging.debug("%s INSIDE _iter_places FUNCTION with country_id %s and postcode %s and parent_places: %s" % (
-                        str(i), str(country_id), str(postcode), str(parent_places)))
-        print()
+
         if country_id is not None:
             country_sstr = " AND country_id = %(country_id)s"
         else:
@@ -279,15 +266,12 @@ class Free_Text:
                   WHERE place_name.name_hash=%(name_hash)s
                   AND place.place_id=place_name.place_id""" + country_sstr, dict(name_hash=sub_hash, country_id=country_id))
                 places = c.fetchall()
-                logging.debug(str(c.rowcount) + " FOUND PLACE")
                 self.queryier.place_cache[cache_key] = places
 
             for place_id, name, location, sub_country_id, parent_id, population in places:
-                logging.debug("INSIDE INNER PLACE RESULTS LOOP")
-                # Don't get caught out by e.g. a capital city having the same name as a state.            
+                # Don't get caught out by e.g. a capital city having the same name as a state.
                 if place_id in parent_places:
                     continue
-                logging.debug("PLACE WASN'T IN PARENT_PLACES")
                 if postcode is not None:
                     # We've got a match, but we've also previously matched a postcode.
 
@@ -304,7 +288,6 @@ class Free_Text:
 
                 new_i = _match_end_split(self.split, i, name)
                 assert new_i < i
-                logging.debug("new_i: " + str(new_i))
                 new_parent_places = [place_id] + parent_places
                 record_match = False
                 if new_i == -1:
@@ -369,10 +352,8 @@ class Free_Text:
     #
 
     def _find_parent(self, find_id, place_id):
-        logging.debug("INSIDE _find_parent")
         cache_key = (find_id, place_id)
         if self.queryier.parent_cache.has_key(cache_key):
-            pass
             return self.queryier.parent_cache[cache_key]
 
         c = self.db.cursor()
@@ -380,8 +361,6 @@ class Free_Text:
         c.execute("""SELECT parent_id FROM place WHERE place_id=%(place_id)s""", dict(place_id=place_id))
         assert c.rowcount == 1
         parent_id = c.fetchone()[0]
-        logging.debug("FOUND PARENT_ID " + str(parent_id))
-        logging.debug("FIND_ID " + str(find_id))
         if parent_id is None:
             self.queryier.parent_cache[cache_key] = False
             return False
@@ -395,11 +374,8 @@ class Free_Text:
 
 
     def _iter_postcode(self, i, country_id):
-        logging.debug("IN _iter_postcode FUNCTION with country_id " + str(country_id))
         uk_id = self.queryier.get_country_id_from_iso2(self, "GB")
         us_id = self.queryier.get_country_id_from_iso2(self, "US")
-        logging.debug("uk_id " + str(uk_id))
-        logging.debug("us_id " + str(us_id))
 
         if country_id == uk_id or country_id is None:
             for sub_postcode, j in UK.postcode_match(self, i):
@@ -416,19 +392,14 @@ class Free_Text:
         else:
             country_sstr = ""
 
-        logging.debug("Looking for POSTCODES " + str(self.split[i]))
-
         c.execute("""SELECT country_id, main, ST_AsGeoJSON(ST_Centroid(location)) as location, postcode_id
                 FROM postcode
                 WHERE lower(main)=%(main)s
                 AND sup IS NULL""" + country_sstr,
             dict(main=self.split[i], country_id=country_id))
 
-        logging.debug("FOUND POSTCODES " + str(c.rowcount))
-
         cols_map = self.queryier.mk_cols_map(c)
         for cnd in c.fetchall():
-            logging.debug("Looking at postcode " + str(cnd))
             if cnd[cols_map["country_id"]] in [uk_id, us_id]:
                 # We search for UK/US postcodes elsewhere.
                 continue
@@ -436,8 +407,7 @@ class Free_Text:
             pp = cnd[cols_map["main"]]
 
             if country_id is None or country_id != self.host_country_id:
-                pp = "%s, %s" % (pp, self.queryier.country_name_id(self,
-                    cnd[cols_map["country_id"]]))
+                pp = "%s, %s" % (pp, self.queryier.country_name_id(self, cnd[cols_map["country_id"]]))
 
             match = Results.RPost_Code(cnd[cols_map["postcode_id"]], cnd[cols_map["country_id"]],
                 cnd[cols_map["location"]], pp)
@@ -484,11 +454,11 @@ def _split(s):
 
 
 def _hash_wd(s):
-    return hashlib.md5(s).hexdigest()
+    return hashlib.md5(s.encode('UTF-8')).hexdigest()
 
 
-def _hash_list(s):
-    return hashlib.md5("_".join(s)).hexdigest()
+def _hash_list(sL):
+    return hashlib.md5("_".join(sL).encode('UTF-8')).hexdigest()
 
 
 #

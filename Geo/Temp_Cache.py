@@ -48,7 +48,7 @@ class Cached_Dict:
     def has_key(self, k):
         self._lock.acquire()
         try:
-            if self._current.has_key(k) or self._old.has_key(k):
+            if k in self._current or k in self._old:
                 return True
         finally:
             self._lock.release()

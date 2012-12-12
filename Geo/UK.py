@@ -20,7 +20,7 @@
 
 
 import re
-import Results
+from . import Results
 
 
 _RE_UK_PARTIAL_POSTCODE = re.compile(
