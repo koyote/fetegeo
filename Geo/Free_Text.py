@@ -373,14 +373,14 @@ class Free_Text:
 
 
     def _iter_postcode(self, i, country_id):
-        uk_id = self.queryier.get_country_id_from_iso2(self, "GB")
+        uk_id = [self.queryier.get_country_id_from_iso2(self, code) for code in UK._UK_CODES]
         us_id = self.queryier.get_country_id_from_iso2(self, "US")
 
-        if country_id == uk_id or country_id is None:
+        if country_id is None or country_id in uk_id:
             for sub_postcode, j in UK.postcode_match(self, i):
                 yield sub_postcode, j
 
-        if country_id == us_id or country_id is None:
+        if country_id is None or country_id == us_id:
             for sub_postcode, j in US.postcode_match(self, i):
                 yield sub_postcode, j
 

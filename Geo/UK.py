@@ -31,11 +31,13 @@ _RE_UK_FULL_POSTCODE = re.compile(
     "^((?:[a-z][0-9])|(?:[a-z][0-9][0-9])|(?:[a-z][0-9][a-z])|(?:[a-z][a-z][0-9])|(?:[a-z][a-z][0-9][0-9])|(?:[a-z][a-z][0-9][a-z])) *([0-9][a-z][a-z])?$",
     re.I)
 
+# Not all UK postcodes belong to GB (Isle of Man for example)
+_UK_CODES = ["GB", "IM", "GY", "JE", "AI", "IO", "FK", "GI", "PN", "GS", "SH", "TC"]
+
 
 def postcode_match(ft, i):
     assert i > -1
-
-    uk_id = ft.queryier.get_country_id_from_iso2(ft, "GB")
+    ids = [ft.queryier.get_country_id_from_iso2(ft, code) for code in _UK_CODES]
 
     m = _RE_UK_PARTIAL_POSTCODE.match(ft.split[i])
     if m is not None:
@@ -46,11 +48,11 @@ def postcode_match(ft, i):
         c.execute(("SELECT postcode_id, country_id, main, "
                    + ft.location_printer("location") + " as location "
                                                        "FROM postcode "
-                                                       "WHERE country_id=%(uk_id)s "
+                                                       "WHERE country_id IN %(ids)s "
                                                        "AND lower(main)=%(main)s "
                                                        "AND sup IS NULL"
                       ),
-                  dict(uk_id=uk_id, main=ft.split[i]))
+                  dict(ids=tuple(ids), main=ft.split[i]))
 
         if c.rowcount == 0:
             # Since we couldn't find AA9A on its own, see if there are any postcodes with an
@@ -59,9 +61,9 @@ def postcode_match(ft, i):
             c.execute("SELECT postcode_id, country_id, main, "
                       + ft.location_printer("location") + " as location "
                                                           "FROM postcode "
-                                                          "WHERE country_id=%(uk_id)s "
+                                                          "WHERE country_id IN %(ids)s "
                                                           "AND lower(main)=%(main)s",
-                      dict(uk_id=uk_id, main=ft.split[i]))
+                      dict(ids=tuple(ids), main=ft.split[i]))
 
         if c.rowcount > 0:
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
@@ -96,11 +98,11 @@ def postcode_match(ft, i):
     c.execute(("SELECT postcode_id, country_id, main, sup, "
                + ft.location_printer("location") + " as location "
                                                    "FROM postcode "
-                                                   "WHERE country_id=%(uk_id)s "
+                                                   "WHERE country_id IN %(ids)s "
                                                    "AND lower(main)=%(main)s "
                                                    "AND lower(sup)=%(sup)s"
                   ),
-              dict(uk_id=uk_id, main=ft.split[i - 1], sup=ft.split[i]))
+              dict(ids=tuple(ids), main=ft.split[i - 1], sup=ft.split[i]))
 
     assert c.rowcount < 2
 
@@ -117,14 +119,14 @@ def postcode_match(ft, i):
     # part. e.g. for AA9A 9AA try matching AA9A 9.
 
     c = ft.db.cursor()
-    c.execute(("SELECT * postcode_id, country_id, main, sup, "
+    c.execute(("SELECT postcode_id, country_id, main, sup, "
                + ft.location_printer("location") + " as location "
                                                    "FROM postcode "
-                                                   "WHERE country_id=%(uk_id)s "
+                                                   "WHERE country_id IN %(ids)s "
                                                    "AND lower(main)=%(main)s "
                                                    "AND lower(sup)=%(sup0)s"
                   ),
-              dict(uk_id=uk_id, main=ft.split[i - 1], sup0=ft.split[i][0]))
+              dict(ids=tuple(ids), main=ft.split[i - 1], sup0=ft.split[i][0]))
 
     assert c.rowcount < 2
 
@@ -144,9 +146,9 @@ def postcode_match(ft, i):
     c.execute("SELECT postcode_id, country_id, main, "
               + ft.location_printer("location") + " as location "
                                                   "FROM postcode "
-                                                  "WHERE country_id=%(uk_id)s "
+                                                  "WHERE country_id IN %(ids)s "
                                                   "AND lower(main)=%(main)s",
-              dict(uk_id=uk_id, main=ft.split[i - 1]))
+              dict(ids=tuple(ids), main=ft.split[i - 1]))
 
     if c.rowcount != 0:
         cols_map = ft.queryier.mk_cols_map(c)
