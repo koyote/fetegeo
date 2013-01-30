@@ -389,10 +389,11 @@ class Free_Text:
         else:
             country_sstr = ""
 
-        c.execute("""SELECT country_id, main, ST_AsGeoJSON(ST_Centroid(location)) as location, postcode_id
-                FROM postcode
-                WHERE lower(main)=%(main)s
-                AND sup IS NULL""" + country_sstr,
+        c.execute(("SELECT country_id, main, ST_AsGeoJSON(ST_Centroid(location)) as location, postcode_id "
+                   "FROM postcode "
+                   "WHERE lower(main)=%(main)s "
+                   "AND sup IS NULL"
+                    ) + country_sstr,
             dict(main=self.split[i], country_id=country_id))
 
         cols_map = self.queryier.mk_cols_map(c)
