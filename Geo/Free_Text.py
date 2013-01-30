@@ -42,8 +42,7 @@ class Free_Text:
         self.host_country_id = host_country_id
         self.country_type_id = self.queryier.get_type_id(self.db, "country")
 
-        # TODO: if something is cached, then any options above will be ignored!
-        results_cache_key = (tuple(lang_ids), find_all, allow_dangling, self.qs, host_country_id)
+        results_cache_key = (tuple(lang_ids), find_all, allow_dangling, show_area, self.qs, host_country_id)
         if queryier.results_cache.has_key(results_cache_key):
             return queryier.results_cache[results_cache_key]
 
@@ -254,7 +253,7 @@ class Free_Text:
         for j in range(0, i + 1):
             sub_hash = _hash_list(self.split[j:i + 1])
             print("Sub_hash " + str(self.split[j:i + 1]) + ": " + sub_hash)
-            cache_key = (country_id, sub_hash)
+            cache_key = (country_id, sub_hash, self.show_area)
             if self.queryier.place_cache.has_key(cache_key):
                 places = self.queryier.place_cache[cache_key]
             else:
