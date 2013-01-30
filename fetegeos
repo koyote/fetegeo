@@ -135,32 +135,32 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
 
     def _q_geo(self):
         fa_txt = self._dom.firstChild.getAttribute("find_all")
-        if _RE_TRUE.match(fa_txt):
-            find_all = True
-        elif _RE_FALSE.match(fa_txt):
-            find_all = False
-        else:
-            self._error("Unknown value '{0:>s}' for find_all attribute.".format(fa_txt))
+        find_all = self._isTrue(fa_txt, 'find_all')
 
         ad_txt = self._dom.firstChild.getAttribute("allow_dangling")
-        if _RE_TRUE.match(ad_txt):
-            allow_dangling = True
-        elif _RE_FALSE.match(ad_txt):
-            allow_dangling = False
-        else:
-            self._error("Unknown value '{0:>s}' for allow_dangling attribute.".format(ad_txt))
+        allow_dangling = self._isTrue(ad_txt, 'allow_dangling')
+
+        sa_txt = self._dom.firstChild.getAttribute("show_area")
+        show_area = self._isTrue(sa_txt, 'show_all')
 
         lang_ids = self._get_lang_ids()
         country_iso = self._get_qe("country")
         country_id = self._get_country_id(country_iso)
 
         qs = self._get_qe("qs")
-        results = self.server.queryier.name_to_lat_long(self._db, lang_ids, find_all, allow_dangling, qs, country_id)
+        results = self.server.queryier.name_to_lat_long(self._db, lang_ids, find_all, allow_dangling, show_area, qs, country_id)
 
         self.request.sendall(bytes("<results>\n{0:>s}\n</results>".format("\n".join([x.to_xml() for x in results])), 'UTF-8'))
 
         self.request.close()
 
+    def _isTrue(self, txt, attr):
+        if _RE_TRUE.match(txt):
+            return True
+        elif _RE_FALSE.match(txt):
+            return False
+        else:
+            self._error("Unknown value '{0:>s}' for '{1:>s}' attribute.".format(txt, attr))
 
     def _q_ctry(self):
         lang_ids = self._get_lang_ids()

@@ -20,7 +20,7 @@
 
 
 import re
-from . import Results
+from .import Results
 
 
 _RE_US_ZIP_PLUS4 = re.compile("[0-9]{4}")
@@ -40,22 +40,22 @@ def _sub_pc_match(ft, i):
 
     c = ft.db.cursor()
 
-    c.execute("SELECT postcode_id, country_id, ST_AsGeoJSON(ST_Centroid(location)) as location, main "
-              "FROM postcode "
-              "WHERE lower(main)=%(main)s "
-              "AND country_id=%(us_id)s",
-        dict(main=ft.split[i], us_id=us_id))
+    c.execute("SELECT postcode_id, country_id, main, "
+              + ft.location_printer("location") + " as location "
+                                                  "FROM postcode "
+                                                  "WHERE lower(main)=%(main)s "
+                                                  "AND country_id=%(us_id)s",
+              dict(main=ft.split[i], us_id=us_id))
 
     cols_map = ft.queryier.mk_cols_map(c)
     for cnd in c.fetchall():
-
         pp = cnd[cols_map["main"]]
 
         if us_id != ft.host_country_id:
             pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, cnd[cols_map["country_id"]]))
 
         match = Results.RPost_Code(cnd[cols_map["postcode_id"]], cnd[cols_map["country_id"]],
-            cnd[cols_map["location"]], pp)
+                                   cnd[cols_map["location"]], pp)
         yield match, i - 1
 
 

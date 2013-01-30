@@ -20,7 +20,7 @@
 
 
 import re
-from . import Results
+from .import Results
 
 
 _RE_UK_PARTIAL_POSTCODE = re.compile(
@@ -43,30 +43,33 @@ def postcode_match(ft, i):
         # postcode (e.g. AA9A), so try matching it on its own.
 
         c = ft.db.cursor()
-        c.execute(("SELECT postcode_id, country_id, ST_AsGeoJSON(ST_Centroid(location)) as location, main "
-                   "FROM postcode "
-                   "WHERE country_id=%(uk_id)s "
-                   "AND lower(main)=%(main)s "
-                   "AND sup IS NULL"
-                    ),
-            dict(uk_id=uk_id, main=ft.split[i]))
+        c.execute(("SELECT postcode_id, country_id, main, "
+                   + ft.location_printer("location") + " as location "
+                                                       "FROM postcode "
+                                                       "WHERE country_id=%(uk_id)s "
+                                                       "AND lower(main)=%(main)s "
+                                                       "AND sup IS NULL"
+                      ),
+                  dict(uk_id=uk_id, main=ft.split[i]))
 
         if c.rowcount == 0:
             # Since we couldn't find AA9A on its own, see if there are any postcodes with an
             # arbitrary supplementary (e.g. AA9A 2AA). This is likely to return multiple matches
             # if AA9A is a valid postcode.
-            c.execute("SELECT postcode_id, country_id, ST_AsGeoJSON(ST_Centroid(location)) as location, main "
-                      "FROM postcode "
-                      "WHERE country_id=%(uk_id)s "
-                      "AND lower(main)=%(main)s",
-                dict(uk_id=uk_id, main=ft.split[i]))
+            c.execute("SELECT postcode_id, country_id, main, "
+                      + ft.location_printer("location") + " as location "
+                                                          "FROM postcode "
+                                                          "WHERE country_id=%(uk_id)s "
+                                                          "AND lower(main)=%(main)s",
+                      dict(uk_id=uk_id, main=ft.split[i]))
 
         if c.rowcount > 0:
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
             cols_map = ft.queryier.mk_cols_map(c)
             fst = c.fetchone()
             match = Results.RPost_Code(fst[cols_map["postcode_id"]],
-                fst[cols_map["country_id"]], fst[cols_map["location"]], mk_pp(ft, fst[cols_map["main"]]))
+                                       fst[cols_map["country_id"]], fst[cols_map["location"]],
+                                       mk_pp(ft, fst[cols_map["main"]]))
             yield match, i - 1
 
     if i == 0:
@@ -83,20 +86,21 @@ def postcode_match(ft, i):
     m = _RE_UK_FULL_POSTCODE.match("%s %s" % (main, sup))
 
     if m is None:
-      return
+        return
 
     # We now try and match a "full postcode" (e.g. of the form SW1 2AA). Because we only have partial
     # UK postcode data, we first of all try matching exactly what is given, gradually backing off if
     # that isn't possible. Since all of these matches are against the same string, as soon as we find
     # a match, we don't try searching any further.
     c = ft.db.cursor()
-    c.execute(("SELECT postcode_id, country_id, ST_AsGeoJSON(ST_Centroid(location)) as location, main, sup "
-               "FROM postcode "
-               "WHERE country_id=%(uk_id)s "
-               "AND lower(main)=%(main)s "
-               "AND lower(sup)=%(sup)s"
-                ),
-        dict(uk_id=uk_id, main=ft.split[i - 1], sup=ft.split[i]))
+    c.execute(("SELECT postcode_id, country_id, main, sup, "
+               + ft.location_printer("location") + " as location "
+                                                   "FROM postcode "
+                                                   "WHERE country_id=%(uk_id)s "
+                                                   "AND lower(main)=%(main)s "
+                                                   "AND lower(sup)=%(sup)s"
+                  ),
+              dict(uk_id=uk_id, main=ft.split[i - 1], sup=ft.split[i]))
 
     assert c.rowcount < 2
 
@@ -105,7 +109,7 @@ def postcode_match(ft, i):
         fst = c.fetchone()
         pp = mk_pp(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]]))
         match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["country_id"]],
-            fst[cols_map["location"]], pp)
+                                   fst[cols_map["location"]], pp)
         yield match, i - 2
         return
 
@@ -113,13 +117,14 @@ def postcode_match(ft, i):
     # part. e.g. for AA9A 9AA try matching AA9A 9.
 
     c = ft.db.cursor()
-    c.execute(("SELECT * postcode_id, country_id, ST_AsGeoJSON(ST_Centroid(location)) as location, main, sup "
-               "FROM postcode "
-               "WHERE country_id=%(uk_id)s "
-               "AND lower(main)=%(main)s "
-               "AND lower(sup)=%(sup0)s"
-                ),
-        dict(uk_id=uk_id, main=ft.split[i - 1], sup0=ft.split[i][0]))
+    c.execute(("SELECT * postcode_id, country_id, main, sup, "
+               + ft.location_printer("location") + " as location "
+                                                   "FROM postcode "
+                                                   "WHERE country_id=%(uk_id)s "
+                                                   "AND lower(main)=%(main)s "
+                                                   "AND lower(sup)=%(sup0)s"
+                  ),
+              dict(uk_id=uk_id, main=ft.split[i - 1], sup0=ft.split[i][0]))
 
     assert c.rowcount < 2
 
@@ -128,7 +133,7 @@ def postcode_match(ft, i):
         fst = c.fetchone()
         pp = mk_pp(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]][0]))
         match = Results.RPost_Code(fst[cols_map["id"]], fst[cols_map["country_id"]],
-            fst[cols_map["lat"]], fst[cols_map["long"]], pp)
+                                   fst[cols_map["lat"]], fst[cols_map["long"]], pp)
         yield match, i - 2
         return
 
@@ -136,19 +141,19 @@ def postcode_match(ft, i):
     # part. This will probably return multiple matches.
 
     c = ft.db.cursor()
-    c.execute("SELECT postcode_id, country_id, ST_AsGeoJSON(ST_Centroid(location)) as location, main "
-              "FROM postcode "
-              "WHERE country_id=%(uk_id)s "
-              "AND lower(main)=%(main)s",
-        dict(uk_id=uk_id, main=ft.split[i - 1]))
+    c.execute("SELECT postcode_id, country_id, main, "
+              + ft.location_printer("location") + " as location "
+                                                  "FROM postcode "
+                                                  "WHERE country_id=%(uk_id)s "
+                                                  "AND lower(main)=%(main)s",
+              dict(uk_id=uk_id, main=ft.split[i - 1]))
 
     if c.rowcount != 0:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone() # Arbitrarily pick the first result.
         match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["country_id"]],
-            fst[cols_map["location"]], mk_pp(ft, fst[cols_map["main"]]))
+                                   fst[cols_map["location"]], mk_pp(ft, fst[cols_map["main"]]))
         yield match, i - 2
-    print("End of line")
 
 
 #

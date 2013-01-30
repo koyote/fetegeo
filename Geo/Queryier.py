@@ -48,8 +48,8 @@ class Queryier:
         self.results_cache = Temp_Cache.Cached_Dict(Temp_Cache.SMALL_CACHE_SIZE)
 
 
-    def name_to_lat_long(self, db, lang_ids, find_all, allow_dangling, qs, host_country_id):
-        return Free_Text.Free_Text().name_to_lat_long(self, db, lang_ids, find_all, allow_dangling,
+    def name_to_lat_long(self, db, lang_ids, find_all, allow_dangling, show_area, qs, host_country_id):
+        return Free_Text.Free_Text().name_to_lat_long(self, db, lang_ids, find_all, allow_dangling, show_area,
             qs, host_country_id)
 
 

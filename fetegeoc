@@ -39,20 +39,22 @@ _TAG_LONG_NAMES = {"dangling": "Dangling text", "place": "Place", "id": "ID", "n
 
 _SHORT_USAGE_MSG = ("Usage:\n"
                     "  * fetegeoc [-l <lang>] [-s <host>] [-p <port>] country <query string>\n"
-                    "  * fetegeoc [-a] [-c <country>] [-s <host>] [-p <port>] [-l <lang>]\n"
+                    "  * fetegeoc [-a] [--sa] [-c <country>] [-s <host>] [-p <port>] [-l <lang>]\n"
                     "    geo <query string>\n"
     )
 
 _LONG_USAGE_MSG = _SHORT_USAGE_MSG + ("\n"
-                                      "  -a If -c is specified, find all matches, not just those in the host\n"
-                                      "     country.\n"
+                                      "  -a   If -c is specified, find all matches, not just those in the host\n"
+                                      "       country.\n"
                                       "\n"
-                                      "  -c Bias the search to the specified country (specified as an ISO2 or ISO3\n"
-                                      "     code).\n"
+                                      "  -c   Bias the search to the specified country (specified as an ISO2 or ISO3\n"
+                                      "       code).\n"
                                       "\n"
-                                      "  -l Specify the preferred language(s) for results to be returned in.\n"
-                                      "     Multiple -l options can be specified; they will be treated in descending\n"
-                                      "     order of preference.\n"
+                                      "  -l   Specify the preferred language(s) for results to be returned in.\n"
+                                      "       Multiple -l options can be specified; they will be treated in descending\n"
+                                      "       order of preference.\n"
+                                      "\n"
+                                      "  --sa If enabled it will print out the whole area as opposed to only the centroid.\n"
     )
 
 
@@ -75,13 +77,14 @@ class Fetegeoc:
 
     def _parse_args(self):
         try:
-            opts, args = getopt.getopt(sys.argv[1:], 'ac:dhl:s:p:')
+            opts, args = getopt.getopt(sys.argv[1:], 'ac:dhl:s:p:', ["show-area", "sa"])
         except getopt.error as e:
             self._usage(str(e), code=1)
 
         self._find_all = False
         self._country = None
         self._allow_dangling = False
+        self._show_area = False
         self._host = _DEFAULT_HOST
         self._port = _DEFAULT_PORT
         self._langs = []
@@ -94,6 +97,8 @@ class Fetegeoc:
                 self._country = arg
             elif opt == "-d":
                 self._allow_dangling = True
+            elif opt in ("--sa", "--show-area"):
+                self._show_area = True
             elif opt == "-h":
                 self._usage(long_help=True)
             elif opt == "-v":
@@ -160,6 +165,7 @@ class Fetegeoc:
     def _q_geo(self):
         fa_txt = str(self._find_all).lower()
         ad_txt = str(self._allow_dangling).lower()
+        sa_txt = str(self._show_area).lower()
 
         langs = "\n".join(["<lang>{0:>s}</lang>".format(x) for x in self._langs])
         country = ""
@@ -169,11 +175,11 @@ class Fetegeoc:
 
 
 
-        self._sock.sendall(bytes(("<geoquery version='1' find_all='{0:>s}' allow_dangling='{1:>s}'>"
-                                  "{2:>s}{3:>s}"
-                                  "<qs>{4:>s}</qs>"
+        self._sock.sendall(bytes(("<geoquery version='1' find_all='{0:>s}' allow_dangling='{1:>s}' show_area='{2:>s}'>"
+                                  "{3:>s}{4:>s}"
+                                  "<qs>{5:>s}</qs>"
                                   "</geoquery>"
-            ).format(fa_txt, ad_txt, langs, country, self._q_str), 'UTF-8'))
+            ).format(fa_txt, ad_txt, sa_txt, langs, country, self._q_str), 'UTF-8'))
 
         d = minidom.parseString(self._pump_sock())
 

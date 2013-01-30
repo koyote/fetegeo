@@ -19,7 +19,7 @@
 # IN THE SOFTWARE.
 
 import re, hashlib
-from . import Results, UK, US
+from .import Results, UK, US
 
 
 _RE_SPLIT = re.compile("[ ,-/]")
@@ -30,17 +30,19 @@ _RE_SPLIT = re.compile("[ ,-/]")
 
 
 class Free_Text:
-    def name_to_lat_long(self, queryier, db, lang_ids, find_all, allow_dangling, qs, host_country_id):
+    def name_to_lat_long(self, queryier, db, lang_ids, find_all, allow_dangling, show_area, qs, host_country_id):
         self.queryier = queryier
         self.db = db
         self.lang_ids = lang_ids
         self.find_all = find_all
         self.allow_dangling = allow_dangling
+        self.show_area = show_area
         self.qs = _cleanup(qs)
         self.split, self.split_indices = _split(self.qs)
         self.host_country_id = host_country_id
         self.country_type_id = self.queryier.get_type_id(self.db, "country")
 
+        # TODO: if something is cached, then any options above will be ignored!
         results_cache_key = (tuple(lang_ids), find_all, allow_dangling, self.qs, host_country_id)
         if queryier.results_cache.has_key(results_cache_key):
             return queryier.results_cache[results_cache_key]
@@ -187,7 +189,6 @@ class Free_Text:
 
 
     def _iter_country(self):
-
         if self.host_country_id is not None:
             # First of all, we try and do the search as if we're in the host country. This is to
             # catch cases where the name (possibly abbreviated) of an administrative area of the
@@ -222,7 +223,7 @@ class Free_Text:
                 WHERE place_name.place_id=place.place_id
                 AND place.type_id=%(type_id)s
                 AND place_name.name_hash=%(name_lwdh)s""",
-                dict(type_id=self.country_type_id, name_lwdh=_hash_wd(self.split[-1])))
+                  dict(type_id=self.country_type_id, name_lwdh=_hash_wd(self.split[-1])))
         cols_map = self.queryier.mk_cols_map(c)
 
         done = set()
@@ -257,11 +258,13 @@ class Free_Text:
             if self.queryier.place_cache.has_key(cache_key):
                 places = self.queryier.place_cache[cache_key]
             else:
-                c.execute("""SELECT DISTINCT ON (place.place_id, place_name.name)
-                  place.place_id, place_name.name, ST_AsGeoJSON(ST_Centroid(place.location)) as location, place.country_id, place.parent_id, place.population
-                  FROM place, place_name
-                  WHERE place_name.name_hash=%(name_hash)s
-                  AND place.place_id=place_name.place_id""" + country_sstr, dict(name_hash=sub_hash, country_id=country_id))
+                c.execute(("SELECT DISTINCT ON (place.place_id, place_name.name) "
+                           "place.place_id, place_name.name, place.country_id, place.parent_id, place.population, "
+                           + self.location_printer("place.location") + " as location "
+                                                                       "FROM place, place_name "
+                                                                       "WHERE place_name.name_hash=%(name_hash)s "
+                                                                       "AND place.place_id=place_name.place_id"
+                              ) + country_sstr, dict(name_hash=sub_hash, country_id=country_id))
                 places = c.fetchall()
                 self.queryier.place_cache[cache_key] = places
 
@@ -293,7 +296,7 @@ class Free_Text:
                 elif new_i is not None:
                     record_match = True
                     for sub_places, sub_postcode, k in self._iter_places(new_i, sub_country_id,
-                        new_parent_places, postcode):
+                                                                         new_parent_places, postcode):
                         assert k < new_i
                         record_match = False
                         yield sub_places, sub_postcode, k
@@ -318,7 +321,7 @@ class Free_Text:
 
                     self._longest_match = new_i + 1
                     self._matches[new_i + 1].append(Results.RPlace(place_id, local_name, location,
-                        sub_country_id, parent_id, population, pp))
+                                                                   sub_country_id, parent_id, population, pp))
 
             if postcode is None:
                 for sub_postcode, k in self._iter_postcode(i, country_id):
@@ -339,7 +342,7 @@ class Free_Text:
                         # the left of the postcode.
 
                         for sub_places, sub_sub_postcode, k in self._iter_places(k, country_id,
-                            parent_places, sub_postcode):
+                                                                                 parent_places, sub_postcode):
                             assert sub_sub_postcode is sub_postcode
                             yield sub_places, sub_sub_postcode, k
 
@@ -389,12 +392,13 @@ class Free_Text:
         else:
             country_sstr = ""
 
-        c.execute(("SELECT country_id, main, ST_AsGeoJSON(ST_Centroid(location)) as location, postcode_id "
-                   "FROM postcode "
-                   "WHERE lower(main)=%(main)s "
-                   "AND sup IS NULL"
-                    ) + country_sstr,
-            dict(main=self.split[i], country_id=country_id))
+        c.execute(("SELECT country_id, main, postcode_id, "
+                   + self.location_printer("location") + " as location "
+                                                         "FROM postcode "
+                                                         "WHERE lower(main)=%(main)s "
+                                                         "AND sup IS NULL"
+                      ) + country_sstr,
+                  dict(main=self.split[i], country_id=country_id))
 
         cols_map = self.queryier.mk_cols_map(c)
         for cnd in c.fetchall():
@@ -408,7 +412,7 @@ class Free_Text:
                 pp = "%s, %s" % (pp, self.queryier.country_name_id(self, cnd[cols_map["country_id"]]))
 
             match = Results.RPost_Code(cnd[cols_map["postcode_id"]], cnd[cols_map["country_id"]],
-                cnd[cols_map["location"]], pp)
+                                       cnd[cols_map["location"]], pp)
             yield match, i - 1
 
         if country_id is not None and country_id != uk_id:
@@ -418,6 +422,12 @@ class Free_Text:
         if country_id is not None and country_id != us_id:
             for sub_postcode, j in US.postcode_match(self, i):
                 yield sub_postcode, j
+
+    def location_printer(self, location):
+        if self.show_area:
+            return "ST_AsGeoJSON({0:>s})".format(location)
+        else:
+            return "ST_AsGeoJSON(ST_Centroid({0:>s}))".format(location)
 
 
 #
