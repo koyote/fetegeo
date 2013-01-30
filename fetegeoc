@@ -209,7 +209,6 @@ class Fetegeoc:
             sys.stderr.write("No match found.\n")
             sys.exit(1)
 
-
     def _q_ctry(self):
         langs = "\n".join(["<lang>{0:>s}</lang>".format(x) for x in self._langs])
         self._sock.sendall(bytes(("<countryquery  version='1'>"
