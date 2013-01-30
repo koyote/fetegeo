@@ -69,9 +69,10 @@ def postcode_match(ft, i):
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
             cols_map = ft.queryier.mk_cols_map(c)
             fst = c.fetchone()
+            pp = pp_place_id(ft, fst[cols_map["main"]],fst[cols_map["postcode_id"]],fst[cols_map["country_id"]])
             match = Results.RPost_Code(fst[cols_map["postcode_id"]],
                                        fst[cols_map["country_id"]], fst[cols_map["location"]],
-                                       mk_pp(ft, fst[cols_map["main"]]))
+                                       pp)
             yield match, i - 1
 
     if i == 0:
@@ -109,7 +110,7 @@ def postcode_match(ft, i):
     if c.rowcount == 1:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone()
-        pp = mk_pp(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]]))
+        pp = pp_place_id(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]]),fst[cols_map["postcode_id"]],fst[cols_map["country_id"]])
         match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["country_id"]],
                                    fst[cols_map["location"]], pp)
         yield match, i - 2
@@ -133,7 +134,7 @@ def postcode_match(ft, i):
     if c.rowcount == 1:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone()
-        pp = mk_pp(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]][0]))
+        pp = pp_place_id(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]][0]),fst[cols_map["postcode_id"]],fst[cols_map["country_id"]])
         match = Results.RPost_Code(fst[cols_map["id"]], fst[cols_map["country_id"]],
                                    fst[cols_map["lat"]], fst[cols_map["long"]], pp)
         yield match, i - 2
@@ -153,36 +154,28 @@ def postcode_match(ft, i):
     if c.rowcount != 0:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone() # Arbitrarily pick the first result.
-        match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["country_id"]],
-                                   fst[cols_map["location"]], mk_pp(ft, fst[cols_map["main"]]))
+        postcode_id = fst[cols_map["postcode_id"]]
+        country_id = fst[cols_map["country_id"]]
+        pp = pp_place_id(ft, fst[cols_map["main"]], postcode_id, country_id)
+        match = Results.RPost_Code(postcode_id, country_id,
+                                   fst[cols_map["location"]], pp)
         yield match, i - 2
 
 
-#
-# Given the string 'pp', add ", United Kingdom" after it if the host country isn't set to the UK.
-#
-
-def mk_pp(ft, pp):
-    uk_id = ft.queryier.get_country_id_from_iso2(ft, "GB")
-
-    if ft.host_country_id == uk_id:
-        return pp
-
-    return "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, uk_id))
-
-
-def pp_place_id(ft, place_id):
-    pp = ft.queryier.name_place_id(ft, place_id)
+def pp_place_id(ft, pp, postcode_id, country_id):
 
     c = ft.db.cursor()
 
     # For UK places, the convention is not to include the constituent country names (England etc.)
     # but to include the counties.
 
-    c.execute("SELECT parent_id FROM place WHERE id=%(id)s", dict(id=place_id))
+    c.execute("SELECT parent_id FROM postcode WHERE postcode_id=%(id)s", dict(id=postcode_id))
     parent_id = c.fetchone()[0]
 
     if parent_id is not None:
         pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.name_place_id(ft, parent_id))
 
-    return mk_pp(ft, pp)
+    if country_id is not None:
+        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, country_id))
+
+    return pp

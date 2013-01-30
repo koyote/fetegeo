@@ -59,8 +59,6 @@ class RPlace:
         self.population = population
         self.pp = pp
 
-    #TODO: FIX LOCATION TO BE DISPLAYED PROPERLY
-
     def to_xml(self):
         #if self.location is not None:
         #    location_txt = "\n<lat>%s</lat>" % str(self.location)
