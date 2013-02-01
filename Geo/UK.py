@@ -66,6 +66,7 @@ def postcode_match(ft, i):
                       dict(ids=tuple(ids), main=ft.split[i]))
 
         if c.rowcount > 0:
+
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
             cols_map = ft.queryier.mk_cols_map(c)
             fst = c.fetchone()
@@ -165,9 +166,6 @@ def postcode_match(ft, i):
 def pp_place_id(ft, pp, postcode_id, country_id):
 
     c = ft.db.cursor()
-
-    # For UK places, the convention is not to include the constituent country names (England etc.)
-    # but to include the counties.
 
     c.execute("SELECT parent_id FROM postcode WHERE postcode_id=%(id)s", dict(id=postcode_id))
     parent_id = c.fetchone()[0]

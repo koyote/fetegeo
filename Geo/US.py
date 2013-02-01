@@ -58,6 +58,7 @@ def _sub_pc_match(ft, i):
                                    cnd[cols_map["location"]], pp)
         yield match, i - 1
 
+## TODO: The following functions are not called:
 
 #
 # Given the string 'pp', add ", United States" after it if the host country isn't set to the US.

@@ -22,11 +22,10 @@ import re, hashlib
 from .import Results, UK, US
 
 
-_RE_SPLIT = re.compile("[ ,-/]")
 
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
 _RE_SQUASH_SPACES = re.compile(" +")
-_RE_SPLIT = re.compile("[ ,-/]")
+_RE_SPLIT = re.compile("[ ,/]")
 
 
 class Free_Text:
@@ -42,6 +41,9 @@ class Free_Text:
         self.host_country_id = host_country_id
         self.country_type_id = self.queryier.get_type_id(self.db, "country")
 
+        print("split: "+str(self.split))
+        print("split indcies: "+str(self.split_indices))
+
         results_cache_key = (tuple(lang_ids), find_all, allow_dangling, show_area, self.qs, host_country_id)
         if queryier.results_cache.has_key(results_cache_key):
             return queryier.results_cache[results_cache_key]
@@ -54,7 +56,10 @@ class Free_Text:
         self._longest_match = len(self.split)
         self._matches = [[] for _ in range(len(self.split))]
 
-        # _matched_places is a set storing (place_id, i) pairs recording that a place was found at
+        print("longest_match: "+str(self._longest_match))
+        print("matches: "+str(self._matches))
+
+    # _matched_places is a set storing (place_id, i) pairs recording that a place was found at
         # position 'i' in the split. This weeds out duplicates *unless* we're doing loose matching
         # when we might conceivably match the same place twice but with different bits of "loose"
         # text to the left of the match.
@@ -71,14 +76,9 @@ class Free_Text:
 
         for country_id, i in self._iter_country():
             if i == -1:
-                # geonames doesn't have lat / long data for countries directly, but includes them as
-                # places in the country file. Which is the worst of all possible worlds
-                # unfortunately.
-                #
-                #self._longest_match = 0
-                #name = pp = queryier.country_name_id(self, country_id)
-                #self._matches[0].append(Results.RCountry(country_id, name, pp))
                 continue
+
+            print("found: "+str(country_id)+" with i: "+str(i))
 
             for parent_places, postcode, j in self._iter_places(i, country_id):
                 if postcode is not None and j + 1 <= self._longest_match:
@@ -228,7 +228,7 @@ class Free_Text:
         done = set()
         for cnd in c.fetchall():
             new_i = _match_end_split(self.split, len(self.split) - 1, cnd[cols_map["name"]])
-
+            print('new_i: '+str(new_i))
             country_id = cnd[cols_map["country_id"]]
             done_key = (country_id, new_i)
             if done_key in done:
@@ -246,16 +246,20 @@ class Free_Text:
         c = self.db.cursor()
 
         if country_id is not None:
-            country_sstr = " AND country_id = %(country_id)s"
+            country_sstr = " AND place.country_id = %(country_id)s"
         else:
             country_sstr = ""
 
         for j in range(0, i + 1):
+            #print("Looking at "+str(j)+" to "+str(i))
+            print("Country_id is "+str(country_id))
+            print("Country String is "+country_sstr)
             sub_hash = _hash_list(self.split[j:i + 1])
             print("Sub_hash " + str(self.split[j:i + 1]) + ": " + sub_hash)
             cache_key = (country_id, sub_hash, self.show_area)
             if self.queryier.place_cache.has_key(cache_key):
                 places = self.queryier.place_cache[cache_key]
+                print("found in cache: "+str(places))
             else:
                 c.execute(("SELECT DISTINCT ON (place.place_id, place_name.name) "
                            "place.place_id, place_name.name, place.country_id, place.parent_id, place.population, "
@@ -264,10 +268,14 @@ class Free_Text:
                                                                        "WHERE place_name.name_hash=%(name_hash)s "
                                                                        "AND place.place_id=place_name.place_id"
                               ) + country_sstr, dict(name_hash=sub_hash, country_id=country_id))
+                print("Query:\n"+str(c.query))
                 places = c.fetchall()
                 self.queryier.place_cache[cache_key] = places
+                print("found in db: "+str(places))
 
-            for place_id, name, location, sub_country_id, parent_id, population in places:
+
+            for place_id, name, sub_country_id, parent_id, population, location in places:
+                print("subcountryid: "+str(sub_country_id))
                 # Don't get caught out by e.g. a capital city having the same name as a state.
                 if place_id in parent_places:
                     continue
