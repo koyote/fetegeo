@@ -60,9 +60,7 @@ class RPlace:
         self.pp = pp
 
     def to_xml(self):
-        #if self.location is not None:
-        #    location_txt = "\n<lat>%s</lat>" % str(self.location)
-        #else:
+
         location_txt = "\n<location>{0:>s}</location>".format(str(self.location))
 
         if self.parent_id is not None:

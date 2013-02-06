@@ -385,23 +385,27 @@ class Free_Text:
                    + self.location_printer("location") + " as location "
                                                          "FROM postcode "
                                                          "WHERE lower(main)=%(main)s "
-                                                         "AND sup IS NULL"
                       ) + country_sstr,
                   dict(main=self.split[i], country_id=country_id))
 
         cols_map = self.queryier.mk_cols_map(c)
         for cnd in c.fetchall():
-            if cnd[cols_map["country_id"]] in [uk_id, us_id]:
+            fetched_country_id = cnd[cols_map["country_id"]]
+            fetched_postcode_id = cnd[cols_map["postcode_id"]]
+            pp = cnd[cols_map["main"]]
+
+            if fetched_country_id in [uk_id, us_id]:
                 # We search for UK/US postcodes elsewhere.
                 continue
 
-            pp = cnd[cols_map["main"]]
+            # Search for a parent place
+            c.execute("SELECT parent_id FROM postcode WHERE postcode_id=%(id)s", dict(id=fetched_postcode_id))
+            parent_id = c.fetchone()[0]
 
-            if country_id is None or country_id != self.host_country_id:
-                pp = "%s, %s" % (pp, self.queryier.country_name_id(self, cnd[cols_map["country_id"]]))
+            if parent_id is not None:
+                pp = "{0:>s}, {1:>s}".format(pp, self.queryier.pp_place_id(self, parent_id))
 
-            match = Results.RPost_Code(cnd[cols_map["postcode_id"]], cnd[cols_map["country_id"]],
-                                       cnd[cols_map["location"]], pp)
+            match = Results.RPost_Code(fetched_postcode_id, fetched_country_id, cnd[cols_map["location"]], pp)
             yield match, i - 1
 
         if country_id is not None and country_id != uk_id:

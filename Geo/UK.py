@@ -157,13 +157,13 @@ def postcode_match(ft, i):
         fst = c.fetchone() # Arbitrarily pick the first result.
         postcode_id = fst[cols_map["postcode_id"]]
         country_id = fst[cols_map["country_id"]]
-        pp = pp_place_id(ft, fst[cols_map["main"]], postcode_id, country_id)
+        pp = pp_place_id(ft, fst[cols_map["main"]], postcode_id)
         match = Results.RPost_Code(postcode_id, country_id,
                                    fst[cols_map["location"]], pp)
         yield match, i - 2
 
 
-def pp_place_id(ft, pp, postcode_id, country_id):
+def pp_place_id(ft, pp, postcode_id):
 
     c = ft.db.cursor()
 
@@ -171,9 +171,6 @@ def pp_place_id(ft, pp, postcode_id, country_id):
     parent_id = c.fetchone()[0]
 
     if parent_id is not None:
-        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.name_place_id(ft, parent_id))
-
-    if country_id is not None:
-        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, country_id))
+        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.pp_place_id(ft, parent_id))
 
     return pp

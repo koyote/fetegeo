@@ -177,15 +177,12 @@ class Queryier:
             format = _DEFAULT_FORMAT
 
         while parent_id is not None:
-            c.execute("""SELECT parent_id, type_id from place WHERE place_id=%(id)s""", dict(id=parent_id))
+            c.execute("SELECT parent_id, type_id from place WHERE place_id=%(id)s", dict(id=parent_id))
             new_parent_id, type = c.fetchone()
 
             #if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
             pp = "{0:>s}, {1:>s}".format(pp, self.name_place_id(ft, parent_id))
             parent_id = new_parent_id
-
-        if country_id != ft.host_country_id:
-            pp = "{0:>s}, {1:>s}".format(pp, self.country_name_id(ft, country_id))
 
         self.place_pp_cache[cache_key] = pp
 

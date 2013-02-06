@@ -49,45 +49,25 @@ def _sub_pc_match(ft, i):
 
     cols_map = ft.queryier.mk_cols_map(c)
     for cnd in c.fetchall():
-        pp = cnd[cols_map["main"]]
+        postcode_id = cnd[cols_map["postcode_id"]]
+        country_id = cnd[cols_map["country_id"]]
+        pp = pp_place_id(ft, cnd[cols_map["main"]], postcode_id)
 
         if us_id != ft.host_country_id:
-            pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, cnd[cols_map["country_id"]]))
+            pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, country_id))
 
-        match = Results.RPost_Code(cnd[cols_map["postcode_id"]], cnd[cols_map["country_id"]],
-                                   cnd[cols_map["location"]], pp)
+        match = Results.RPost_Code(postcode_id, country_id, cnd[cols_map["location"]], pp)
         yield match, i - 1
 
-## TODO: The following functions are not called:
 
-#
-# Given the string 'pp', add ", United States" after it if the host country isn't set to the US.
-#
-
-def mk_pp(ft, pp):
-    us_id = ft.queryier.get_country_id_from_iso2(ft, "US")
-
-    if ft.host_country_id == us_id:
-        return pp
-
-    return "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, us_id))
-
-
-def pp_place_id(ft, place_id):
-    pp = ft.queryier.name_place_id(ft, place_id)
+def pp_place_id(ft, pp, postcode_id):
 
     c = ft.db.cursor()
 
-    # For US places, the convention is to include the state name but not the county, so we iterate
-    # until we find a place without a parent id, assuming that is the US state.
+    c.execute("SELECT parent_id FROM postcode WHERE postcode_id=%(id)s", dict(id=postcode_id))
+    parent_id = c.fetchone()[0]
 
-    cnd_id = place_id
-    while True:
-        c.execute("SELECT parent_id FROM place WHERE id=%(id)s", dict(id=cnd_id))
-        parent_id = c.fetchone()[0]
+    if parent_id is not None:
+        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.pp_place_id(ft, parent_id))
 
-        if parent_id is None:
-            pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.name_place_id(ft, cnd_id))
-            return mk_pp(ft, pp)
-
-        cnd_id = parent_id
+    return pp
