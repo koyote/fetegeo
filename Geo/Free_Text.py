@@ -403,7 +403,7 @@ class Free_Text:
             parent_id = c.fetchone()[0]
 
             if parent_id is not None:
-                pp = "{0:>s}, {1:>s}".format(pp, self.queryier.pp_place_id(self, parent_id))
+                pp = "{0}, {1}".format(pp, self.queryier.pp_place_id(self, parent_id))
 
             match = Results.RPost_Code(fetched_postcode_id, cnd[cols_map["osm_id"]], fetched_country_id, cnd[cols_map["location"]], pp)
             yield match, i - 1
@@ -419,9 +419,9 @@ class Free_Text:
 
     def location_printer(self, location):
         if self.show_area:
-            return "ST_AsGeoJSON({0:>s})".format(location)
+            return "ST_AsGeoJSON({0})".format(location)
         else:
-            return "ST_AsGeoJSON(ST_Centroid({0:>s}))".format(location)
+            return "ST_AsGeoJSON(ST_Centroid({0}))".format(location)
 
 
 #

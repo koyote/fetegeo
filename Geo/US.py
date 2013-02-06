@@ -54,7 +54,7 @@ def _sub_pc_match(ft, i):
         pp = pp_place_id(ft, cnd[cols_map["main"]], postcode_id)
 
         if us_id != ft.host_country_id:
-            pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, country_id))
+            pp = "{0}, {1}".format(pp, ft.queryier.country_name_id(ft, country_id))
 
         match = Results.RPost_Code(postcode_id, cnd[cols_map["osm_id"]], country_id, cnd[cols_map["location"]], pp)
         yield match, i - 1
@@ -68,6 +68,6 @@ def pp_place_id(ft, pp, postcode_id):
     parent_id = c.fetchone()[0]
 
     if parent_id is not None:
-        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.pp_place_id(ft, parent_id))
+        pp = "{0}, {1}".format(pp, ft.queryier.pp_place_id(ft, parent_id))
 
     return pp

@@ -86,7 +86,7 @@ def postcode_match(ft, i):
 
     main = ft.split[i - 1]
     sup = ft.split[i]
-    m = _RE_UK_FULL_POSTCODE.match("{0:>s} {1:>s}".format(main, sup))
+    m = _RE_UK_FULL_POSTCODE.match("{0} {1}".format(main, sup))
 
     if m is None:
         return
@@ -110,7 +110,7 @@ def postcode_match(ft, i):
     if c.rowcount == 1:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone()
-        pp = pp_place_id(ft, "{0:>s} {1:>s}".format(fst[cols_map["main"]], fst[cols_map["sup"]]),
+        pp = pp_place_id(ft, "{0} {1}".format(fst[cols_map["main"]], fst[cols_map["sup"]]),
                          fst[cols_map["postcode_id"]])
         match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["osm_id"]], fst[cols_map["country_id"]],
                                    fst[cols_map["location"]], pp)
@@ -135,7 +135,7 @@ def postcode_match(ft, i):
     if c.rowcount == 1:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone()
-        pp = pp_place_id(ft, "{0:>s} {1:>s}".format(fst[cols_map["main"]], fst[cols_map["sup"]][0]),
+        pp = pp_place_id(ft, "{0} {1}".format(fst[cols_map["main"]], fst[cols_map["sup"]][0]),
                          fst[cols_map["postcode_id"]])
         match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["osm_id"]], fst[cols_map["country_id"]],
                                    fst[cols_map["location"]], pp)
@@ -171,6 +171,6 @@ def pp_place_id(ft, pp, postcode_id):
     parent_id = c.fetchone()[0]
 
     if parent_id is not None:
-        pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.pp_place_id(ft, parent_id))
+        pp = "{0}, {1}".format(pp, ft.queryier.pp_place_id(ft, parent_id))
 
     return pp

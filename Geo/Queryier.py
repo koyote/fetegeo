@@ -160,8 +160,7 @@ class Queryier:
 
         pp = self.name_place_id(ft, place_id)
 
-        c.execute("SELECT parent_id, country_id, admin_level from place WHERE place_id=%(id)s",
-                  dict(id=place_id))
+        c.execute("SELECT parent_id, country_id, admin_level from place WHERE place_id=%(id)s", dict(id=place_id))
         assert c.rowcount == 1
 
         parent_id, country_id, admin_level = c.fetchone()
@@ -178,7 +177,7 @@ class Queryier:
             assert(new_parent_id != parent_id)
 
             if admin_level in format:
-                pp = "{0:>s}, {1:>s}".format(pp, self.name_place_id(ft, parent_id))
+                pp = "{0}, {1}".format(pp, self.name_place_id(ft, parent_id))
 
             parent_id = new_parent_id
 

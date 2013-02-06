@@ -134,7 +134,7 @@ class Fetegeoc:
 
     def _usage(self, error_msg="", code=0, long_help=False):
         if error_msg != "":
-            sys.stderr.write("Error: {0:>s}\n".format(error_msg))
+            sys.stderr.write("Error: {0}\n".format(error_msg))
 
         if long_help:
             sys.stderr.write(_LONG_USAGE_MSG)
@@ -157,9 +157,9 @@ class Fetegeoc:
     def _elem_pp(self, e, indent_level):
         sys.stdout.write("  " * indent_level)
         if len(e.childNodes) > 0:
-            print("{0:>s}: {1:>s}".format(_TAG_LONG_NAMES[e.tagName], e.childNodes[0].data))
+            print("{0}: {1}".format(_TAG_LONG_NAMES[e.tagName], e.childNodes[0].data))
         else:
-            print("{0:>s}:".format(_TAG_LONG_NAMES[e.tagName]))
+            print("{0}:".format(_TAG_LONG_NAMES[e.tagName]))
 
 
     def _q_geo(self):
@@ -167,19 +167,19 @@ class Fetegeoc:
         ad_txt = str(self._allow_dangling).lower()
         sa_txt = str(self._show_area).lower()
 
-        langs = "\n".join(["<lang>{0:>s}</lang>".format(x) for x in self._langs])
+        langs = "\n".join(["<lang>{0}</lang>".format(x) for x in self._langs])
         country = ""
 
         if self._country is not None:
-            country = "<country>{0:>s}</country>\n".format(self._country)
+            country = "<country>{0}</country>\n".format(self._country)
 
 
 
-        self._sock.sendall(bytes(("<geoquery version='1' find_all='{0:>s}' allow_dangling='{1:>s}' show_area='{2:>s}'>"
-                                  "{3:>s}{4:>s}"
-                                  "<qs>{5:>s}</qs>"
+        self._sock.sendall(bytes(("<geoquery version='1' find_all='{find_all}' allow_dangling='{allow_dangling}' show_area='{show_area}'>"
+                                  "{langs}{country}"
+                                  "<qs>{qs}</qs>"
                                   "</geoquery>"
-            ).format(fa_txt, ad_txt, sa_txt, langs, country, self._q_str), 'UTF-8'))
+            ).format(find_all=fa_txt, allow_dangling=ad_txt, show_area=sa_txt, langs=langs, country=country, qs=self._q_str), 'UTF-8'))
 
         d = minidom.parseString(self._pump_sock())
 
@@ -196,7 +196,7 @@ class Fetegeoc:
 
             if i > 0:
                 print()
-            print("Match #%d" % (i + 1))
+            print("Match #{0}".format(i + 1))
 
             j = 0
             for e in place.childNodes:
@@ -216,12 +216,12 @@ class Fetegeoc:
             sys.exit(1)
 
     def _q_ctry(self):
-        langs = "\n".join(["<lang>{0:>s}</lang>".format(x) for x in self._langs])
+        langs = "\n".join(["<lang>{0}</lang>".format(x) for x in self._langs])
         self._sock.sendall(bytes(("<countryquery  version='1'>"
-                                  "{0:>s}"
-                                  "<qs>{1:>s}</qs>"
+                                  "{langs}"
+                                  "<qs>{qs}</qs>"
                                   "</countryquery>"
-            ).format(langs, self._q_str), 'UTF-8'))
+            ).format(langs=langs, qs=self._q_str), 'UTF-8'))
 
         d = minidom.parseString(self._pump_sock())
         if len(d.firstChild.childNodes) == 0:
@@ -236,7 +236,7 @@ class Fetegeoc:
                 self._elem_pp(e, 0)
             if i == 0:
                 if d.getElementsByTagName("error"):
-                    sys.stderr.write("{0:>s}\n".format(d.getElementsByTagName("error")[0].firstChild.nodeValue))
+                    sys.stderr.write("{0}\n".format(d.getElementsByTagName("error")[0].firstChild.nodeValue))
                 sys.stderr.write("No match found.\n")
                 sys.exit(1)
 
