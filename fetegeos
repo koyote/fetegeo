@@ -180,16 +180,17 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         # Try and find name in correct language
         type_id = self.server.queryier.get_type_id(self._db, "country")
         if type_id:
-            c.execute("""SELECT place_name.name FROM place,place_name
-                WHERE place.place_id=place_name.place_id
-                AND place.country_id=%(cntry_id)s
-                AND lang_id IN %(lang_id)s
-                AND place.type_id=%(type_id)s""",
+            c.execute(("SELECT place_name.name FROM place, place_name "
+                       "WHERE place.place_id=place_name.place_id "
+                       "AND place.country_id=%(cntry_id)s "
+                       "AND lang_id IN %(lang_id)s "
+                       "AND place.type_id=%(type_id)s"
+                          ),
                 dict(cntry_id=cntry_id, lang_id=tuple(lang_ids), type_id=type_id))
 
         # No name found, we'll just use the default english ISO name then
         if c.rowcount < 1:
-            c.execute("""SELECT name FROM country WHERE country_id=%(cntry_id)s""", dict(cntry_id=cntry_id))
+            c.execute("SELECT name FROM country WHERE country_id=%(cntry_id)s", dict(cntry_id=cntry_id))
 
         self.request.sendall(bytes("<result><country><name>{0}</name></country></result>".format(c.fetchone()[0]), 'UTF-8'))
 
@@ -208,14 +209,10 @@ class Fetegeos_Server(socketserver.TCPServer, socketserver.ThreadingMixIn):
             sys.stderr.write("Error: No config file found.")
             sys.exit(1)
 
-        f = open(conf_path, "r")
-        # We fool load_source by pretending the config file comes from /dev/null,
-        # which (because it's a filename without a "." in it, but which is
-        # genuinely present) stops it trying to write a .pyc file. Otherwise for
-        # a file fetegeos.conf, one ends up with a fetegeos.confc file, which is
-        # plain ugly.
-        self._config = imp.load_source("config", "/dev/null", f)
-        f.close()
+        # Don't write bytecode for config file
+        sys.dont_write_bytecode = True
+        self._config = imp.load_source("config", conf_path)
+        sys.dont_write_bytecode = False
 
         # Setup the server
 

@@ -66,7 +66,7 @@ class Fetegeoc:
         try:
             self._sock.connect((self._host, self._port))
         except Exception as e:
-            sys.stderr.write("Error: %s.\n" % e)
+            sys.stderr.write("Error: {0}.\n".format(e))
             sys.exit(1)
 
         if self._q_type == _Q_GEO:
@@ -112,7 +112,7 @@ class Fetegeoc:
                 try:
                     self._port = int(arg)
                 except ValueError:
-                    self._usage("Invalid port number '%s'." % arg)
+                    self._usage("Invalid port number '{0}'.".format(arg))
 
         if self._find_all and self._country is None:
             self._usage("-a makes no sense without -c.")
@@ -129,7 +129,7 @@ class Fetegeoc:
         elif args[0] == "country":
             self._q_type = _Q_CTRY
         else:
-            self._usage("Unknown query type '%s'." % args[0])
+            self._usage("Unknown query type '{0}'.".format(args[0]))
 
 
     def _usage(self, error_msg="", code=0, long_help=False):
