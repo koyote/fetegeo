@@ -42,16 +42,17 @@ class RCountry:
 
     def to_xml(self):
         return ("<country>\n"
-                "<id>{0}</id>\n"
-                "<name>{1}</name>\n"
-                "<pp>{2}</pp>\n"
+                "<id>{id}</id>\n"
+                "<name>{name}</name>\n"
+                "<pp>{pp}</pp>\n"
                 "</country>"
-            ).format(self.id, self.name, self.pp)
+            ).format(id=self.id, name=self.name, pp=self.pp)
 
 
 class RPlace:
-    def __init__(self, id, name, location, country_id, parent_id, population, pp):
+    def __init__(self, id, osm_id, name, location, country_id, parent_id, population, pp):
         self.id = id
+        self.osm_id = osm_id
         self.name = name
         self.location = location
         self.country_id = country_id
@@ -60,31 +61,34 @@ class RPlace:
         self.pp = pp
 
     def to_xml(self):
-
-        location_txt = "\n<location>{0:>s}</location>".format(str(self.location))
-
         if self.parent_id is not None:
-            parent_id_txt = "\n<parent_id>{0:>s}</parent_id>".format(str(self.parent_id))
+            parent_id_txt = "<parent_id>{0}</parent_id>".format(self.parent_id)
         else:
             parent_id_txt = ""
 
         if self.population is not None:
-            population_txt = "\n<population>{0:>s}</population>".format(str(self.population))
+            population_txt = "<population>{0}</population>".format(self.population)
         else:
             population_txt = ""
 
         return ("<place>\n"
-                "<id>{0}</id>\n"
-                "<name>{1}</name>{2}\n"
-                "<country_id>{3}</country_id>{4}{5}\n"
-                "<pp>{6}</pp>\n"
+                "<id>{id}</id>\n"
+                "<osm_id>{osm_id}</osm_id>\n"
+                "<name>{name}</name>\n"
+                "<location>{location}</location>\n"
+                "<country_id>{country_id}</country_id>\n"
+                "{parent_id}\n"
+                "{population}\n"
+                "<pp>{pp}</pp>\n"
                 "</place>"
-            ).format(self.id, self.name, location_txt, self.country_id, parent_id_txt, population_txt, self.pp)
+            ).format(id=self.id, osm_id=self.osm_id, name=self.name, location=self.location, country_id=self.country_id,
+                     parent_id=parent_id_txt, population=population_txt, pp=self.pp)
 
 
 class RPost_Code:
-    def __init__(self, id, country_id, location, pp):
+    def __init__(self, id, osm_id, country_id, location, pp):
         self.id = id
+        self.osm_id = osm_id
         self.country_id = country_id
         self.location = location
         self.pp = pp
@@ -93,9 +97,10 @@ class RPost_Code:
 
     def to_xml(self):
         return ("<postcode>\n"
-                "<id>{0}</id>\n"
-                "<country_id>{1}</country_id>\n"
-                "<location>{2}</location>\n"
-                "<pp>{3}</pp>\n"
+                "<id>{id}</id>\n"
+                "<osm_id>{osm_id}</osm_id>\n"
+                "<country_id>{country_id}</country_id>\n"
+                "<location>{location}</location>\n"
+                "<pp>{pp}</pp>\n"
                 "</postcode>"
-            ).format(self.id, str(self.country_id), str(self.location), self.pp)
+            ).format(id=self.id, country_id=self.country_id, location=self.location, pp=self.pp, osm_id=self.osm_id)

@@ -250,7 +250,7 @@ class Free_Text:
                 places = self.queryier.place_cache[cache_key]
             else:
                 c.execute(("SELECT DISTINCT ON (place.place_id, place_name.name) "
-                           "place.place_id, place_name.name, place.country_id, place.parent_id, place.population, "
+                           "place.place_id, place.osm_id, place_name.name, place.country_id, place.parent_id, place.population, "
                            + self.location_printer("place.location") + " as location "
                                                                        "FROM place, place_name "
                                                                        "WHERE place_name.name_hash=%(name_hash)s "
@@ -259,7 +259,7 @@ class Free_Text:
                 places = c.fetchall()
                 self.queryier.place_cache[cache_key] = places
 
-            for place_id, name, sub_country_id, parent_id, population, location in places:
+            for place_id, osm_id, name, sub_country_id, parent_id, population, location in places:
                 # Don't get caught out by e.g. a capital city having the same name as a state.
                 if place_id in parent_places:
                     continue
@@ -309,7 +309,7 @@ class Free_Text:
                     pp = self.queryier.pp_place_id(self, place_id)
 
                     self._longest_match = new_i + 1
-                    self._matches[new_i + 1].append(Results.RPlace(place_id, local_name, location,
+                    self._matches[new_i + 1].append(Results.RPlace(place_id, osm_id, local_name, location,
                                                                    sub_country_id, parent_id, population, pp))
 
             if postcode is None:
@@ -381,7 +381,7 @@ class Free_Text:
         else:
             country_sstr = ""
 
-        c.execute(("SELECT country_id, main, postcode_id, "
+        c.execute(("SELECT country_id, main, postcode_id, osm_id, "
                    + self.location_printer("location") + " as location "
                                                          "FROM postcode "
                                                          "WHERE lower(main)=%(main)s "
@@ -405,7 +405,7 @@ class Free_Text:
             if parent_id is not None:
                 pp = "{0:>s}, {1:>s}".format(pp, self.queryier.pp_place_id(self, parent_id))
 
-            match = Results.RPost_Code(fetched_postcode_id, fetched_country_id, cnd[cols_map["location"]], pp)
+            match = Results.RPost_Code(fetched_postcode_id, cnd[cols_map["osm_id"]], fetched_country_id, cnd[cols_map["location"]], pp)
             yield match, i - 1
 
         if country_id is not None and country_id != uk_id:

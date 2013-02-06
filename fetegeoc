@@ -35,7 +35,7 @@ _Q_CTRY = 1
 
 _TAG_LONG_NAMES = {"dangling": "Dangling text", "place": "Place", "id": "ID", "name": "Name",
                    "location": "Location", "country_id": "Country ID", "parent_id": "Parent ID",
-                   "population": "Population", "pp": "PP"}
+                   "population": "Population", "pp": "PP", "osm_id": "OSM ID"}
 
 _SHORT_USAGE_MSG = ("Usage:\n"
                     "  * fetegeoc [-l <lang>] [-s <host>] [-p <port>] country <query string>\n"

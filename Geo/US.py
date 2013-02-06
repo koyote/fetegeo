@@ -40,7 +40,7 @@ def _sub_pc_match(ft, i):
 
     c = ft.db.cursor()
 
-    c.execute("SELECT postcode_id, country_id, main, "
+    c.execute("SELECT postcode_id, osm_id, country_id, main, "
               + ft.location_printer("location") + " as location "
                                                   "FROM postcode "
                                                   "WHERE lower(main)=%(main)s "
@@ -56,7 +56,7 @@ def _sub_pc_match(ft, i):
         if us_id != ft.host_country_id:
             pp = "{0:>s}, {1:>s}".format(pp, ft.queryier.country_name_id(ft, country_id))
 
-        match = Results.RPost_Code(postcode_id, country_id, cnd[cols_map["location"]], pp)
+        match = Results.RPost_Code(postcode_id, cnd[cols_map["osm_id"]], country_id, cnd[cols_map["location"]], pp)
         yield match, i - 1
 
 

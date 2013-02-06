@@ -45,7 +45,7 @@ def postcode_match(ft, i):
         # postcode (e.g. AA9A), so try matching it on its own.
 
         c = ft.db.cursor()
-        c.execute(("SELECT postcode_id, country_id, main, "
+        c.execute(("SELECT postcode_id, osm_id, country_id, main, "
                    + ft.location_printer("location") + " as location "
                                                        "FROM postcode "
                                                        "WHERE country_id IN %(ids)s "
@@ -58,7 +58,7 @@ def postcode_match(ft, i):
             # Since we couldn't find AA9A on its own, see if there are any postcodes with an
             # arbitrary supplementary (e.g. AA9A 2AA). This is likely to return multiple matches
             # if AA9A is a valid postcode.
-            c.execute("SELECT postcode_id, country_id, main, "
+            c.execute("SELECT postcode_id, osm_id, country_id, main, "
                       + ft.location_printer("location") + " as location "
                                                           "FROM postcode "
                                                           "WHERE country_id IN %(ids)s "
@@ -66,12 +66,11 @@ def postcode_match(ft, i):
                       dict(ids=tuple(ids), main=ft.split[i]))
 
         if c.rowcount > 0:
-
             # We might have got multiple matches, in which case we arbitrarily pick the first one.
             cols_map = ft.queryier.mk_cols_map(c)
             fst = c.fetchone()
-            pp = pp_place_id(ft, fst[cols_map["main"]],fst[cols_map["postcode_id"]],fst[cols_map["country_id"]])
-            match = Results.RPost_Code(fst[cols_map["postcode_id"]],
+            pp = pp_place_id(ft, fst[cols_map["main"]], fst[cols_map["postcode_id"]])
+            match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["osm_id"]],
                                        fst[cols_map["country_id"]], fst[cols_map["location"]],
                                        pp)
             yield match, i - 1
@@ -87,7 +86,7 @@ def postcode_match(ft, i):
 
     main = ft.split[i - 1]
     sup = ft.split[i]
-    m = _RE_UK_FULL_POSTCODE.match("%s %s" % (main, sup))
+    m = _RE_UK_FULL_POSTCODE.match("{0:>s} {1:>s}".format(main, sup))
 
     if m is None:
         return
@@ -97,7 +96,7 @@ def postcode_match(ft, i):
     # that isn't possible. Since all of these matches are against the same string, as soon as we find
     # a match, we don't try searching any further.
     c = ft.db.cursor()
-    c.execute(("SELECT postcode_id, country_id, main, sup, "
+    c.execute(("SELECT postcode_id, osm_id, country_id, main, sup, "
                + ft.location_printer("location") + " as location "
                                                    "FROM postcode "
                                                    "WHERE country_id IN %(ids)s "
@@ -111,8 +110,9 @@ def postcode_match(ft, i):
     if c.rowcount == 1:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone()
-        pp = pp_place_id(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]]),fst[cols_map["postcode_id"]],fst[cols_map["country_id"]])
-        match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["country_id"]],
+        pp = pp_place_id(ft, "{0:>s} {1:>s}".format(fst[cols_map["main"]], fst[cols_map["sup"]]),
+                         fst[cols_map["postcode_id"]])
+        match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["osm_id"]], fst[cols_map["country_id"]],
                                    fst[cols_map["location"]], pp)
         yield match, i - 2
         return
@@ -121,7 +121,7 @@ def postcode_match(ft, i):
     # part. e.g. for AA9A 9AA try matching AA9A 9.
 
     c = ft.db.cursor()
-    c.execute(("SELECT postcode_id, country_id, main, sup, "
+    c.execute(("SELECT postcode_id, osm_id, country_id, main, sup, "
                + ft.location_printer("location") + " as location "
                                                    "FROM postcode "
                                                    "WHERE country_id IN %(ids)s "
@@ -135,9 +135,10 @@ def postcode_match(ft, i):
     if c.rowcount == 1:
         cols_map = ft.queryier.mk_cols_map(c)
         fst = c.fetchone()
-        pp = pp_place_id(ft, "%s %s" % (fst[cols_map["main"]], fst[cols_map["sup"]][0]),fst[cols_map["postcode_id"]],fst[cols_map["country_id"]])
-        match = Results.RPost_Code(fst[cols_map["id"]], fst[cols_map["country_id"]],
-                                   fst[cols_map["lat"]], fst[cols_map["long"]], pp)
+        pp = pp_place_id(ft, "{0:>s} {1:>s}".format(fst[cols_map["main"]], fst[cols_map["sup"]][0]),
+                         fst[cols_map["postcode_id"]])
+        match = Results.RPost_Code(fst[cols_map["postcode_id"]], fst[cols_map["osm_id"]], fst[cols_map["country_id"]],
+                                   fst[cols_map["location"]], pp)
         yield match, i - 2
         return
 
@@ -145,7 +146,7 @@ def postcode_match(ft, i):
     # part. This will probably return multiple matches.
 
     c = ft.db.cursor()
-    c.execute("SELECT postcode_id, country_id, main, "
+    c.execute("SELECT postcode_id, osm_id, country_id, main, "
               + ft.location_printer("location") + " as location "
                                                   "FROM postcode "
                                                   "WHERE country_id IN %(ids)s "
@@ -158,13 +159,12 @@ def postcode_match(ft, i):
         postcode_id = fst[cols_map["postcode_id"]]
         country_id = fst[cols_map["country_id"]]
         pp = pp_place_id(ft, fst[cols_map["main"]], postcode_id)
-        match = Results.RPost_Code(postcode_id, country_id,
+        match = Results.RPost_Code(postcode_id, fst[cols_map["osm_id"]], country_id,
                                    fst[cols_map["location"]], pp)
         yield match, i - 2
 
 
 def pp_place_id(ft, pp, postcode_id):
-
     c = ft.db.cursor()
 
     c.execute("SELECT parent_id FROM postcode WHERE postcode_id=%(id)s", dict(id=postcode_id))

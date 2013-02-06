@@ -104,16 +104,17 @@ class Queryier:
 
         c = ft.db.cursor()
 
-        c.execute("""SELECT place_name.name
-                FROM place_name, place
-                WHERE place.place_id=place_name.place_id
-                AND place.country_id=%(country_id)s
-                AND place_name.lang_id IN %(lang_id)s
-                AND place.type_id=%(type_id)s""",
+        c.execute(("SELECT place_name.name "
+                   "FROM place_name, place "
+                   "WHERE place.place_id=place_name.place_id "
+                   "AND place.country_id=%(country_id)s "
+                   "AND place_name.lang_id IN %(lang_id)s "
+                   "AND place.type_id=%(type_id)s"
+                      ),
             dict(country_id=country_id, lang_id=tuple(ft.lang_ids), type_id=self.get_type_id(ft.db, "country")))
 
         if c.rowcount < 1:
-            c.execute("""SELECT name FROM country WHERE country_id=%(country_id)s""", dict(country_id=country_id))
+            c.execute("SELECT name FROM country WHERE country_id=%(country_id)s", dict(country_id=country_id))
 
         name = c.fetchone()[0]
 
@@ -123,7 +124,7 @@ class Queryier:
 
     def get_type_id(self, db, type):
         c = db.cursor()
-        c.execute("""SELECT type_id FROM type WHERE name=%(type)s""", dict(type=type))
+        c.execute("SELECT type_id FROM type WHERE name=%(type)s", dict(type=type))
         if c.rowcount == 1:
             return c.fetchone()[0]
         return None
@@ -136,7 +137,7 @@ class Queryier:
 
         c = ft.db.cursor()
 
-        c.execute("""SELECT name FROM place_name WHERE place_id=%(place_id)s AND lang_id IN %(lang_id)s""",
+        c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s AND lang_id IN %(lang_id)s",
             dict(place_id=place_id, lang_id=tuple(ft.lang_ids)))
 
         if c.rowcount > 0:
@@ -179,6 +180,7 @@ class Queryier:
         while parent_id is not None:
             c.execute("SELECT parent_id, type_id from place WHERE place_id=%(id)s", dict(id=parent_id))
             new_parent_id, type = c.fetchone()
+            assert(new_parent_id != parent_id)
 
             #if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
             pp = "{0:>s}, {1:>s}".format(pp, self.name_place_id(ft, parent_id))
