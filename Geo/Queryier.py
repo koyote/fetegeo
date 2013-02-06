@@ -19,17 +19,13 @@
 # IN THE SOFTWARE.
 
 
-from . import Free_Text, Temp_Cache
+from .import Free_Text, Temp_Cache
 
-TYPE_STATE = 0
-TYPE_COUNTY = 1
-TYPE_PLACE = 2
-
-# For countries we record as a pair (print county, print state).
-
-_DEFAULT_FORMAT = (True, True)
-_COUNTRY_FORMATS = {"GB": (True, False), "DE": (False, True), "FR": (False, True),
-                    "US": (False, True)}
+# Here we set a custom set of parents to be added to the pretty print.
+# http://wiki.openstreetmap.org/wiki/Tag:boundary%3Dadministrative might help choosing which levels we need for
+# each country.
+_ADMIN_LEVELS = {"LU": (2, 6, 8), "GB": (2, 4, 6, 8)}
+_DEFAULT_LEVEL = (2, 4, 6, 8)
 
 
 class Queryier:
@@ -50,7 +46,7 @@ class Queryier:
 
     def name_to_lat_long(self, db, lang_ids, find_all, allow_dangling, show_area, qs, host_country_id):
         return Free_Text.Free_Text().name_to_lat_long(self, db, lang_ids, find_all, allow_dangling, show_area,
-            qs, host_country_id)
+                                                      qs, host_country_id)
 
 
     #
@@ -111,7 +107,7 @@ class Queryier:
                    "AND place_name.lang_id IN %(lang_id)s "
                    "AND place.type_id=%(type_id)s"
                       ),
-            dict(country_id=country_id, lang_id=tuple(ft.lang_ids), type_id=self.get_type_id(ft.db, "country")))
+                  dict(country_id=country_id, lang_id=tuple(ft.lang_ids), type_id=self.get_type_id(ft.db, "country")))
 
         if c.rowcount < 1:
             c.execute("SELECT name FROM country WHERE country_id=%(country_id)s", dict(country_id=country_id))
@@ -138,7 +134,7 @@ class Queryier:
         c = ft.db.cursor()
 
         c.execute("SELECT name FROM place_name WHERE place_id=%(place_id)s AND lang_id IN %(lang_id)s",
-            dict(place_id=place_id, lang_id=tuple(ft.lang_ids)))
+                  dict(place_id=place_id, lang_id=tuple(ft.lang_ids)))
 
         if c.rowcount > 0:
             name = c.fetchone()[0]
@@ -164,26 +160,26 @@ class Queryier:
 
         pp = self.name_place_id(ft, place_id)
 
-        # TODO: Maybe save admin_level and parse that?
-
-        c.execute("SELECT parent_id, country_id, type_id from place WHERE place_id=%(id)s", dict(id=place_id))
+        c.execute("SELECT parent_id, country_id, admin_level from place WHERE place_id=%(id)s",
+                  dict(id=place_id))
         assert c.rowcount == 1
 
-        parent_id, country_id, type = c.fetchone()
+        parent_id, country_id, admin_level = c.fetchone()
 
         iso2 = self.get_country_iso2_from_id(ft, country_id)
-        if iso2 in _COUNTRY_FORMATS:
-            format = _COUNTRY_FORMATS[iso2]
+        if iso2 in _ADMIN_LEVELS:
+            format = _ADMIN_LEVELS[iso2]
         else:
-            format = _DEFAULT_FORMAT
+            format = _DEFAULT_LEVEL
 
         while parent_id is not None:
-            c.execute("SELECT parent_id, type_id from place WHERE place_id=%(id)s", dict(id=parent_id))
-            new_parent_id, type = c.fetchone()
+            c.execute("SELECT parent_id, admin_level from place WHERE place_id=%(id)s", dict(id=parent_id))
+            new_parent_id, admin_level = c.fetchone()
             assert(new_parent_id != parent_id)
 
-            #if format[0] and type == TYPE_COUNTY or format[1] and type == TYPE_STATE:
-            pp = "{0:>s}, {1:>s}".format(pp, self.name_place_id(ft, parent_id))
+            if admin_level in format:
+                pp = "{0:>s}, {1:>s}".format(pp, self.name_place_id(ft, parent_id))
+
             parent_id = new_parent_id
 
         self.place_pp_cache[cache_key] = pp
