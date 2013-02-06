@@ -22,7 +22,6 @@ import re, hashlib
 from .import Results, UK, US
 
 
-
 _RE_IRRELEVANT_CHARS = re.compile("[,\\n\\r\\t;()]")
 _RE_SQUASH_SPACES = re.compile(" +")
 _RE_SPLIT = re.compile("[ ,/]")
@@ -405,7 +404,8 @@ class Free_Text:
             if parent_id is not None:
                 pp = "{0}, {1}".format(pp, self.queryier.pp_place_id(self, parent_id))
 
-            match = Results.RPost_Code(fetched_postcode_id, cnd[cols_map["osm_id"]], fetched_country_id, cnd[cols_map["location"]], pp)
+            match = Results.RPost_Code(fetched_postcode_id, cnd[cols_map["osm_id"]], fetched_country_id,
+                                       cnd[cols_map["location"]], pp)
             yield match, i - 1
 
         if country_id is not None and country_id != uk_id:

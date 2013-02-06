@@ -150,7 +150,7 @@ class Fetegeos_Handler(socketserver.BaseRequestHandler):
         qs = self._get_qe("qs")
         results = self.server.queryier.name_to_lat_long(self._db, lang_ids, find_all, allow_dangling, show_area, qs, country_id)
 
-        self.request.sendall(bytes("<results>\n{0}\n</results>".format("\n".join([x.to_xml() for x in results])), 'UTF-8'))
+        self.request.sendall(bytes("<results>{0}</results>".format("".join([x.to_xml() for x in results])), 'UTF-8'))
 
         self.request.close()
 

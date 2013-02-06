@@ -22,21 +22,28 @@
 import re
 from .import Results
 
-
-_RE_US_ZIP_PLUS4 = re.compile("[0-9]{4}")
+_RE_US_ZIP = re.compile("^[0-9]{5}$")
+_RE_US_ZIP_PLUS4 = re.compile("^[0-9]{5}-[0-9]{4}$")
 
 
 def postcode_match(ft, i):
     for match, new_i in _sub_pc_match(ft, i):
         yield match, new_i
 
-    if i > 0 and _RE_US_ZIP_PLUS4.match(ft.split[i]):
-        for match, new_i in _sub_pc_match(ft, i - 1):
-            yield match, new_i
-
 
 def _sub_pc_match(ft, i):
     us_id = ft.queryier.get_country_id_from_iso2(ft, "US")
+    if _RE_US_ZIP_PLUS4.match(ft.split[i]):
+        main, sup = ft.split[i].split('-')
+    elif _RE_US_ZIP.match(ft.split[i]):
+        main, sup = ft.split[i], None
+    else:
+        return
+
+    if sup is not None:
+        sup_txt = " AND lower(sup)=%(sup)s "
+    else:
+        sup_txt = ""
 
     c = ft.db.cursor()
 
@@ -44,8 +51,9 @@ def _sub_pc_match(ft, i):
               + ft.location_printer("location") + " as location "
                                                   "FROM postcode "
                                                   "WHERE lower(main)=%(main)s "
-                                                  "AND country_id=%(us_id)s",
-              dict(main=ft.split[i], us_id=us_id))
+                                                  "AND country_id=%(us_id)s"
+              + sup_txt,
+              dict(main=main, sup=sup, us_id=us_id, ))
 
     cols_map = ft.queryier.mk_cols_map(c)
     for cnd in c.fetchall():
@@ -61,7 +69,6 @@ def _sub_pc_match(ft, i):
 
 
 def pp_place_id(ft, pp, postcode_id):
-
     c = ft.db.cursor()
 
     c.execute("SELECT parent_id FROM postcode WHERE postcode_id=%(id)s", dict(id=postcode_id))

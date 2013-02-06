@@ -26,9 +26,9 @@ class Result:
 
 
     def to_xml(self):
-        return ("<result>\n"
-                "{0}\n"
-                "<dangling>{1}</dangling>\n"
+        return ("<result>"
+                "{0}"
+                "<dangling>{1}</dangling>"
                 "</result>"
             ).format(self.ri.to_xml(), self.dangling)
 
@@ -41,10 +41,10 @@ class RCountry:
 
 
     def to_xml(self):
-        return ("<country>\n"
-                "<id>{id}</id>\n"
-                "<name>{name}</name>\n"
-                "<pp>{pp}</pp>\n"
+        return ("<country>"
+                "<id>{id}</id>"
+                "<name>{name}</name>"
+                "<pp>{pp}</pp>"
                 "</country>"
             ).format(id=self.id, name=self.name, pp=self.pp)
 
@@ -71,15 +71,15 @@ class RPlace:
         else:
             population_txt = ""
 
-        return ("<place>\n"
-                "<id>{id}</id>\n"
-                "<osm_id>{osm_id}</osm_id>\n"
-                "<name>{name}</name>\n"
-                "<location>{location}</location>\n"
-                "<country_id>{country_id}</country_id>\n"
-                "{parent_id}\n"
-                "{population}\n"
-                "<pp>{pp}</pp>\n"
+        return ("<place>"
+                "<id>{id}</id>"
+                "<osm_id>{osm_id}</osm_id>"
+                "<name>{name}</name>"
+                "<location>{location}</location>"
+                "<country_id>{country_id}</country_id>"
+                "{parent_id}"
+                "{population}"
+                "<pp>{pp}</pp>"
                 "</place>"
             ).format(id=self.id, osm_id=self.osm_id, name=self.name, location=self.location, country_id=self.country_id,
                      parent_id=parent_id_txt, population=population_txt, pp=self.pp)
@@ -96,11 +96,11 @@ class RPost_Code:
 
 
     def to_xml(self):
-        return ("<postcode>\n"
-                "<id>{id}</id>\n"
-                "<osm_id>{osm_id}</osm_id>\n"
-                "<country_id>{country_id}</country_id>\n"
-                "<location>{location}</location>\n"
-                "<pp>{pp}</pp>\n"
+        return ("<postcode>"
+                "<id>{id}</id>"
+                "<osm_id>{osm_id}</osm_id>"
+                "<country_id>{country_id}</country_id>"
+                "<location>{location}</location>"
+                "<pp>{pp}</pp>"
                 "</postcode>"
             ).format(id=self.id, country_id=self.country_id, location=self.location, pp=self.pp, osm_id=self.osm_id)
